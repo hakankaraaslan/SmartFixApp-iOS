@@ -6,29 +6,37 @@
 //
 
 import UIKit
+// UIKit iOS uygulamalarında kullanıcı arayüzü oluşturmak için kullanılan temel framework'tür.
+// ViewController, Button, Navigation gibi temel UI bileşenleri bu framework içinde yer alır.
 
 @main
+// @main uygulamanın giriş noktasıdır.
+// Uygulama çalıştırıldığında ilk olarak bu sınıf devreye girer.
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    // AppDelegate uygulamanın yaşam döngüsünü yöneten sınıftır.
+    // Uygulama açılma, kapanma, arka plana geçme gibi olaylar burada takip edilir.
 
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Uygulama ilk açıldığında çalışan metottur.
+        // Genel ayarlar, servis başlatma işlemleri veya başlangıç yapılandırmaları burada yapılır.
         return true
     }
 
     // MARK: UISceneSession Lifecycle
+    // Scene yaşam döngüsü, uygulamanın pencere ve sahne yönetimini kontrol eder.
+    // Özellikle çoklu pencere desteği olan yapılarda kullanılır.
 
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
-        // Called when a new scene session is being created.
-        // Use this method to select a configuration to create the new scene with.
+        // Yeni bir scene oturumu oluşturulurken bu metot çağrılır.
+        // Hangi scene yapılandırmasının kullanılacağı burada belirlenir.
         return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
 
     func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
-        // Called when the user discards a scene session.
-        // If any sessions were discarded while the application was not running, this will be called shortly after application:didFinishLaunchingWithOptions.
-        // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
+        // Kullanılmayan scene oturumları silindiğinde bu metot çalışır.
+        // Artık ihtiyaç duyulmayan kaynakları burada temizlemek mümkündür.
     }
 
 

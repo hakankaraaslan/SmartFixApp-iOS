@@ -6,24 +6,105 @@
 //
 
 import UIKit
+// UIKit iOS uygulamalarında kullanıcı arayüzü oluşturmak için kullanılan temel framework'tür.
+// ViewController, ekranların yönetilmesini ve UI bileşenlerinin kullanılmasını sağlar.
 
 final class CustomerHomeViewController: UIViewController {
+    // CustomerHomeViewController müşteri rolündeki kullanıcıların göreceği ana ekranı temsil eder.
+    // Bu ekran genellikle servis talebi oluşturma, geçmiş talepleri görüntüleme gibi işlemleri içerir.
+
+    private let welcomeLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Welcome, Customer"
+        label.font = .systemFont(ofSize: 28, weight: .bold)
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        return label
+    }()
+
+    private let subtitleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "What would you like to do today?"
+        label.font = .systemFont(ofSize: 16, weight: .regular)
+        label.textColor = .secondaryLabel
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        return label
+    }()
+
+    private let createRequestButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Create Request", for: .normal)
+        button.backgroundColor = .systemBlue
+        button.setTitleColor(.white, for: .normal)
+        button.layer.cornerRadius = 12
+        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        return button
+    }()
+
+    private let myRequestsButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("My Requests", for: .normal)
+        button.backgroundColor = .systemGray5
+        button.setTitleColor(.systemBlue, for: .normal)
+        button.layer.cornerRadius = 12
+        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        return button
+    }()
+
+    private lazy var stackView: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [
+            welcomeLabel,
+            subtitleLabel,
+            createRequestButton,
+            myRequestsButton
+        ])
+        stack.axis = .vertical
+        stack.spacing = 20
+        stack.alignment = .fill
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
 
     override func viewDidLoad() {
+        // ViewController belleğe yüklendiğinde çalışan ilk lifecycle metodudur.
+        // Arayüz ayarları ve başlangıç konfigürasyonları genellikle burada yapılır.
         super.viewDidLoad()
+        // UIViewController'ın kendi başlangıç işlemlerini gerçekleştirmesi için çağrılır.
         title = "Customer Home"
+        // Navigation bar üzerinde görünecek ekran başlığını belirler.
         view.backgroundColor = .systemBackground
+        // Ekranın arka plan rengini sistem temasına uygun olacak şekilde ayarlar.
+        setupUI()
+        setupActions()
     }
-    
 
-    /*
-    // MARK: - Navigation
+    private func setupUI() {
+        view.addSubview(stackView)
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+
+            createRequestButton.heightAnchor.constraint(equalToConstant: 52),
+            myRequestsButton.heightAnchor.constraint(equalToConstant: 52)
+        ])
     }
-    */
+
+    private func setupActions() {
+        createRequestButton.addTarget(self, action: #selector(createRequestButtonTapped), for: .touchUpInside)
+        myRequestsButton.addTarget(self, action: #selector(myRequestsButtonTapped), for: .touchUpInside)
+    }
+
+    @objc private func createRequestButtonTapped() {
+        let createRequestVC = CreateRequestViewController()
+        navigationController?.pushViewController(createRequestVC, animated: true)
+    }
+
+    @objc private func myRequestsButtonTapped() {
+        let myRequestsVC = MyRequestsViewController()
+        navigationController?.pushViewController(myRequestsVC, animated: true)
+    }
 
 }

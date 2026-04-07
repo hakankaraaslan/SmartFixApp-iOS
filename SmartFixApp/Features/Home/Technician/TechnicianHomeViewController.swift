@@ -9,21 +9,74 @@ import UIKit
 
 final class TechnicianHomeViewController: UIViewController {
 
+    private let welcomeLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Welcome, Technician"
+        label.font = .systemFont(ofSize: 28, weight: .bold)
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        return label
+    }()
+
+    private let subtitleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "View open repair requests and send your offer."
+        label.font = .systemFont(ofSize: 16, weight: .regular)
+        label.textColor = .secondaryLabel
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        return label
+    }()
+
+    private let openRequestsButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Open Requests", for: .normal)
+        button.backgroundColor = .systemBlue
+        button.setTitleColor(.white, for: .normal)
+        button.layer.cornerRadius = 12
+        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        return button
+    }()
+
+    private lazy var stackView: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [
+            welcomeLabel,
+            subtitleLabel,
+            openRequestsButton
+        ])
+        stack.axis = .vertical
+        stack.spacing = 20
+        stack.alignment = .fill
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Technician Home"
         view.backgroundColor = .systemBackground
+        setupUI()
+        setupActions()
     }
-    
 
-    /*
-    // MARK: - Navigation
+    private func setupUI() {
+        view.addSubview(stackView)
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+
+            openRequestsButton.heightAnchor.constraint(equalToConstant: 52)
+        ])
     }
-    */
 
+    private func setupActions() {
+        openRequestsButton.addTarget(self, action: #selector(openRequestsButtonTapped), for: .touchUpInside)
+    }
+
+    @objc private func openRequestsButtonTapped() {
+        let openRequestsVC = OpenRequestsViewController()
+        navigationController?.pushViewController(openRequestsVC, animated: true)
+    }
 }

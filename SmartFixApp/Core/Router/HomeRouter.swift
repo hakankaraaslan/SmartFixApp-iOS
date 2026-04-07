@@ -11,9 +11,9 @@ enum HomeRouter {
     static func makeHome(for role: UserRole) -> UIViewController {
         switch role {
         case .customer:
-            return CustomerHomeViewController()
+            return CustomerTabBarController()
         case .technician:
-            return TechnicianHomeViewController()
+            return TechnicianTabBarController()
         }
     }
 }
