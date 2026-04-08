@@ -9,11 +9,15 @@ import UIKit
 
 enum HomeRouter {
     static func makeHome(for role: UserRole) -> UIViewController {
+        let rootVC: UIViewController
+
         switch role {
         case .customer:
-            return CustomerTabBarController()
+            rootVC = CustomerTabBarController()
         case .technician:
-            return TechnicianTabBarController()
+            rootVC = TechnicianTabBarController()
         }
+
+        return UINavigationController(rootViewController: rootVC)
     }
 }

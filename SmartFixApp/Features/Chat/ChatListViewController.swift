@@ -9,12 +9,6 @@ import UIKit
 
 final class ChatListViewController: UIViewController {
 
-    struct ChatRoom {
-        let participantName: String
-        let requestTitle: String
-        let lastMessage: String
-    }
-
     private let role: UserRole
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
@@ -41,11 +35,15 @@ final class ChatListViewController: UIViewController {
         case .customer:
             chatRooms = [
                 ChatRoom(
+                    id: UUID().uuidString,
+                    requestId: "req-1",
                     participantName: "Ahmet Repair Service",
                     requestTitle: "Refrigerator is not cooling",
                     lastMessage: "I can come tomorrow morning."
                 ),
                 ChatRoom(
+                    id: UUID().uuidString,
+                    requestId: "req-2",
                     participantName: "Teknik Destek Pro",
                     requestTitle: "Kitchen sink leakage",
                     lastMessage: "Can you send one more photo?"
@@ -55,11 +53,15 @@ final class ChatListViewController: UIViewController {
         case .technician:
             chatRooms = [
                 ChatRoom(
+                    id: UUID().uuidString,
+                    requestId: "req-3",
                     participantName: "Mehmet Yılmaz",
                     requestTitle: "Power outlet is not working",
                     lastMessage: "Can you come this evening?"
                 ),
                 ChatRoom(
+                    id: UUID().uuidString,
+                    requestId: "req-2",
                     participantName: "Ayşe Demir",
                     requestTitle: "Kitchen sink leakage",
                     lastMessage: "The leak is getting worse."
@@ -115,7 +117,8 @@ extension ChatListViewController: UITableViewDelegate {
         let room = chatRooms[indexPath.row]
 
         let chatDetailVC = ChatDetailViewController(
-            technicianName: room.participantName,
+            chatRoomId: room.id,
+            participantName: room.participantName,
             requestTitle: room.requestTitle
         )
         navigationController?.pushViewController(chatDetailVC, animated: true)

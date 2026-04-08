@@ -199,7 +199,12 @@ final class LoginViewController: UIViewController {
             if success {
                 let selectedRole: UserRole = self.roleSegmentedControl.selectedSegmentIndex == 0 ? .customer : .technician
                 let homeVC = HomeRouter.makeHome(for: selectedRole)
-                self.navigationController?.setViewControllers([homeVC], animated: true)
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let sceneDelegate = windowScene.delegate as? SceneDelegate {
+
+                    sceneDelegate.window?.rootViewController = homeVC
+                    sceneDelegate.window?.makeKeyAndVisible()
+                }
             } else {
                 self.showAlert(title: "Authentication Failed", message: "Please try again.")
             }

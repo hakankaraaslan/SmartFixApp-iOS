@@ -11,26 +11,20 @@ final class OffersForRequestViewController: UIViewController {
 
     // MARK: - Model
 
-    struct Offer {
-        let technicianName: String
-        let price: String
-        let estimatedTime: String
-    }
+
 
     // MARK: - Properties
 
+    private let requestId: String
     private let requestTitle: String
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
-    private var offers: [Offer] = [
-        Offer(technicianName: "Ahmet Repair Service", price: "₺750", estimatedTime: "2 hours"),
-        Offer(technicianName: "Teknik Destek Pro", price: "₺680", estimatedTime: "3 hours"),
-        Offer(technicianName: "Hızlı Usta", price: "₺820", estimatedTime: "1 hour")
-    ]
+    private var offers: [Offer] = []
 
     // MARK: - Init
 
-    init(requestTitle: String) {
+    init(requestId: String, requestTitle: String) {
+        self.requestId = requestId
         self.requestTitle = requestTitle
         super.init(nibName: nil, bundle: nil)
     }
@@ -45,6 +39,7 @@ final class OffersForRequestViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupTableView()
+        loadOffers()
     }
 
     // MARK: - Setup
@@ -69,6 +64,11 @@ final class OffersForRequestViewController: UIViewController {
         tableView.dataSource = self
         tableView.delegate = self
     }
+
+    private func loadOffers() {
+        offers = MockDataProvider.shared.offers(for: requestId)
+        tableView.reloadData()
+    }
 }
 
 // MARK: - UITableViewDataSource
@@ -90,7 +90,7 @@ extension OffersForRequestViewController: UITableViewDataSource {
 
         var content = cell.defaultContentConfiguration()
         content.text = offer.technicianName
-        content.secondaryText = "Price: \(offer.price) • Estimated Time: \(offer.estimatedTime)"
+        content.secondaryText = "Price: ₺\(offer.price) • Estimated Time: \(offer.estimatedTime)"
         content.secondaryTextProperties.color = .secondaryLabel
 
         cell.contentConfiguration = content
@@ -111,7 +111,7 @@ extension OffersForRequestViewController: UITableViewDelegate {
             title: "Accept Offer?",
             message: """
             Technician: \(offer.technicianName)
-            Price: \(offer.price)
+            Price: ₺\(offer.price)
             Estimated Time: \(offer.estimatedTime)
             """,
             preferredStyle: .alert
@@ -120,8 +120,24 @@ extension OffersForRequestViewController: UITableViewDelegate {
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
 
         alert.addAction(UIAlertAction(title: "Accept", style: .default) { _ in
+            let chatRoomId: String
+
+            switch offer.technicianName {
+            case "Ahmet Repair Service":
+                chatRoomId = "chat-1"
+            case "Teknik Destek Pro":
+                chatRoomId = "chat-2"
+            case "Mehmet Yılmaz":
+                chatRoomId = "chat-3"
+            case "Ayşe Demir":
+                chatRoomId = "chat-4"
+            default:
+                chatRoomId = "chat-1"
+            }
+
             let chatDetailVC = ChatDetailViewController(
-                technicianName: offer.technicianName,
+                chatRoomId: chatRoomId,
+                participantName: offer.technicianName,
                 requestTitle: self.requestTitle
             )
             self.navigationController?.pushViewController(chatDetailVC, animated: true)

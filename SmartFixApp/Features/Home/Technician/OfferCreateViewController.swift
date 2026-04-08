@@ -9,6 +9,7 @@ import UIKit
 
 final class OfferCreateViewController: UIViewController {
 
+    private let requestId: String
     private let requestTitle: String
     private let category: String
     private let descriptionText: String
@@ -83,7 +84,8 @@ final class OfferCreateViewController: UIViewController {
         return stack
     }()
 
-    init(requestTitle: String, category: String, descriptionText: String) {
+    init(requestId: String, requestTitle: String, category: String, descriptionText: String) {
+        self.requestId = requestId
         self.requestTitle = requestTitle
         self.category = category
         self.descriptionText = descriptionText
@@ -137,15 +139,29 @@ final class OfferCreateViewController: UIViewController {
             return
         }
 
+        guard Int(price) != nil else {
+            showAlert(title: "Invalid Price", message: "Please enter a numeric price.")
+            return
+        }
+
         setLoading(true)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
             guard let self = self else { return }
             self.setLoading(false)
 
+            let createdOffer = Offer(
+                id: UUID().uuidString,
+                requestId: self.requestId,
+                technicianName: "Current Technician",
+                price: price,
+                estimatedTime: estimatedTime
+            )
+            MockDataProvider.shared.addOffer(createdOffer)
+
             let alert = UIAlertController(
                 title: "Offer Submitted",
-                message: "Your offer has been created successfully.",
+                message: "Offer for request ID: \(createdOffer.requestId)\nPrice: ₺\(createdOffer.price)\nEstimated Time: \(createdOffer.estimatedTime)",
                 preferredStyle: .alert
             )
 

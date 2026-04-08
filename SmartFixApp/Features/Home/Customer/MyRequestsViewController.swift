@@ -11,21 +11,13 @@ final class MyRequestsViewController: UIViewController {
 
     // MARK: - Dummy Model
 
-    struct RepairRequest {
-        let category: String
-        let problemTitle: String
-        let status: String
-    }
+    
 
     // MARK: - Properties
 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
-    private var requests: [RepairRequest] = [
-        RepairRequest(category: "White Goods", problemTitle: "Refrigerator is not cooling", status: "Open"),
-        RepairRequest(category: "Electrical", problemTitle: "Living room light keeps flickering", status: "Open"),
-        RepairRequest(category: "Plumbing", problemTitle: "Kitchen sink is leaking", status: "Accepted")
-    ]
+    private var requests: [Request] = []
 
     // MARK: - Lifecycle
 
@@ -33,6 +25,7 @@ final class MyRequestsViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupTableView()
+        loadRequests()
     }
 
     // MARK: - Setup
@@ -57,6 +50,11 @@ final class MyRequestsViewController: UIViewController {
         tableView.dataSource = self
         tableView.delegate = self
     }
+
+    private func loadRequests() {
+        requests = MockDataProvider.shared.customerRequests
+        tableView.reloadData()
+    }
 }
 
 // MARK: - UITableViewDataSource
@@ -73,8 +71,8 @@ extension MyRequestsViewController: UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(withIdentifier: "RequestCell", for: indexPath)
 
         var content = cell.defaultContentConfiguration()
-        content.text = request.problemTitle
-        content.secondaryText = "\(request.category) • Status: \(request.status)"
+        content.text = request.title
+        content.secondaryText = "\(request.category) • Status: \(request.status.rawValue)"
         content.secondaryTextProperties.color = .secondaryLabel
 
         cell.contentConfiguration = content
@@ -92,10 +90,11 @@ extension MyRequestsViewController: UITableViewDelegate {
         let request = requests[indexPath.row]
 
         let detailRequest = RequestDetailViewController.RequestDetail(
+            id: request.id,
             category: request.category,
-            problemTitle: request.problemTitle,
-            description: "This is a temporary detailed description for the selected repair request. Real request data will be connected later.",
-            status: request.status
+            problemTitle: request.title,
+            description: request.detailDescription,
+            status: request.status.rawValue
         )
 
         let detailVC = RequestDetailViewController(request: detailRequest)

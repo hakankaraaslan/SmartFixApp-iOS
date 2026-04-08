@@ -9,12 +9,8 @@ import UIKit
 
 final class ChatDetailViewController: UIViewController {
 
-    struct Message {
-        let text: String
-        let isFromCurrentUser: Bool
-    }
-
-    private let technicianName: String
+    private let chatRoomId: String
+    private let participantName: String
     private let requestTitle: String
 
     private let tableView = UITableView(frame: .zero, style: .plain)
@@ -39,14 +35,11 @@ final class ChatDetailViewController: UIViewController {
         return button
     }()
 
-    private var messages: [Message] = [
-        Message(text: "Hello, I reviewed your request.", isFromCurrentUser: false),
-        Message(text: "Thank you. When are you available?", isFromCurrentUser: true),
-        Message(text: "I can come tomorrow morning.", isFromCurrentUser: false)
-    ]
+    private var messages: [Message] = []
 
-    init(technicianName: String, requestTitle: String) {
-        self.technicianName = technicianName
+    init(chatRoomId: String, participantName: String, requestTitle: String) {
+        self.chatRoomId = chatRoomId
+        self.participantName = participantName
         self.requestTitle = requestTitle
         super.init(nibName: nil, bundle: nil)
     }
@@ -60,10 +53,11 @@ final class ChatDetailViewController: UIViewController {
         setupUI()
         setupTableView()
         setupActions()
+        loadMessages()
     }
 
     private func setupUI() {
-        title = technicianName
+        title = participantName
         view.backgroundColor = .systemBackground
 
         navigationItem.largeTitleDisplayMode = .never
@@ -113,17 +107,30 @@ final class ChatDetailViewController: UIViewController {
         sendButton.addTarget(self, action: #selector(sendButtonTapped), for: .touchUpInside)
     }
 
+    private func loadMessages() {
+        messages = MockDataProvider.shared.messages(for: chatRoomId)
+        tableView.reloadData()
+
+        if !messages.isEmpty {
+            let lastIndex = IndexPath(row: messages.count - 1, section: 0)
+            tableView.scrollToRow(at: lastIndex, at: .bottom, animated: false)
+        }
+    }
+
     @objc private func sendButtonTapped() {
         let text = (messageTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !text.isEmpty else { return }
 
-        messages.append(Message(text: text, isFromCurrentUser: true))
-        messageTextField.text = nil
-        tableView.reloadData()
+        let newMessage = Message(
+            id: UUID().uuidString,
+            text: text,
+            isFromCurrentUser: true
+        )
 
-        let lastIndex = IndexPath(row: messages.count - 1, section: 0)
-        tableView.scrollToRow(at: lastIndex, at: .bottom, animated: true)
+        MockDataProvider.shared.addMessage(newMessage, for: chatRoomId)
+        messageTextField.text = nil
+        loadMessages()
     }
 }
 
@@ -156,4 +163,3 @@ extension ChatDetailViewController: UITableViewDataSource {
 
 extension ChatDetailViewController: UITableViewDelegate {
 }
-

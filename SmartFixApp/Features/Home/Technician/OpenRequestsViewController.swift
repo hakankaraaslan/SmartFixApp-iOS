@@ -9,36 +9,17 @@ import UIKit
 
 final class OpenRequestsViewController: UIViewController {
 
-    struct OpenRequest {
-        let category: String
-        let problemTitle: String
-        let shortDescription: String
-    }
+    
 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
-    private var requests: [OpenRequest] = [
-        OpenRequest(
-            category: "White Goods",
-            problemTitle: "Refrigerator is not cooling",
-            shortDescription: "Customer reports that the fridge stopped cooling yesterday."
-        ),
-        OpenRequest(
-            category: "Electrical",
-            problemTitle: "Power outlet is not working",
-            shortDescription: "One wall outlet in the living room is not providing power."
-        ),
-        OpenRequest(
-            category: "Plumbing",
-            problemTitle: "Kitchen sink leakage",
-            shortDescription: "Water is leaking from under the sink cabinet."
-        )
-    ]
+    private var requests: [Request] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupTableView()
+        loadRequests()
     }
 
     private func setupUI() {
@@ -61,6 +42,11 @@ final class OpenRequestsViewController: UIViewController {
         tableView.dataSource = self
         tableView.delegate = self
     }
+
+    private func loadRequests() {
+        requests = MockDataProvider.shared.openRequests.filter { $0.status == .open }
+        tableView.reloadData()
+    }
 }
 
 extension OpenRequestsViewController: UITableViewDataSource {
@@ -73,8 +59,8 @@ extension OpenRequestsViewController: UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(withIdentifier: "OpenRequestCell", for: indexPath)
 
         var content = cell.defaultContentConfiguration()
-        content.text = request.problemTitle
-        content.secondaryText = "\(request.category) • \(request.shortDescription)"
+        content.text = request.title
+        content.secondaryText = "\(request.category) • \(request.detailDescription)"
         content.secondaryTextProperties.color = .secondaryLabel
 
         cell.contentConfiguration = content
@@ -88,9 +74,10 @@ extension OpenRequestsViewController: UITableViewDelegate {
         let request = requests[indexPath.row]
 
         let offerVC = OfferCreateViewController(
-            requestTitle: request.problemTitle,
+            requestId: request.id,
+            requestTitle: request.title,
             category: request.category,
-            descriptionText: request.shortDescription
+            descriptionText: request.detailDescription
         )
         navigationController?.pushViewController(offerVC, animated: true)
 

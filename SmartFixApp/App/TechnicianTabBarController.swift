@@ -12,6 +12,26 @@ final class TechnicianTabBarController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTabs()
+        setupNavigationBar()
+    }
+    
+    private func setupNavigationBar() {
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Logout",
+            style: .plain,
+            target: self,
+            action: #selector(logoutTapped)
+        )
+    }
+
+    @objc private func logoutTapped() {
+        let loginVC = LoginViewController()
+        let nav = UINavigationController(rootViewController: loginVC)
+
+        if let sceneDelegate = view.window?.windowScene?.delegate as? SceneDelegate {
+            sceneDelegate.window?.rootViewController = nav
+            sceneDelegate.window?.makeKeyAndVisible()
+        }
     }
 
     private func setupTabs() {

@@ -12,6 +12,7 @@ final class RequestDetailViewController: UIViewController {
     // MARK: - Model
 
     struct RequestDetail {
+        let id: String
         let category: String
         let problemTitle: String
         let description: String
@@ -153,7 +154,10 @@ final class RequestDetailViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func offersButtonTapped() {
-        let offersVC = OffersForRequestViewController(requestTitle: request.problemTitle)
+        let offersVC = OffersForRequestViewController(
+            requestId: request.id,
+            requestTitle: request.problemTitle
+        )
         navigationController?.pushViewController(offersVC, animated: true)
     }
 }
