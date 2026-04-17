@@ -12,6 +12,7 @@ final class ChatDetailViewController: UIViewController {
     private let chatRoomId: String
     private let participantName: String
     private let requestTitle: String
+    private let currentUserRole: UserRole
 
     private let tableView = UITableView(frame: .zero, style: .plain)
 
@@ -37,10 +38,11 @@ final class ChatDetailViewController: UIViewController {
 
     private var messages: [Message] = []
 
-    init(chatRoomId: String, participantName: String, requestTitle: String) {
+    init(chatRoomId: String, participantName: String, requestTitle: String, currentUserRole: UserRole) {
         self.chatRoomId = chatRoomId
         self.participantName = participantName
         self.requestTitle = requestTitle
+        self.currentUserRole = currentUserRole
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -125,7 +127,7 @@ final class ChatDetailViewController: UIViewController {
         let newMessage = Message(
             id: UUID().uuidString,
             text: text,
-            isFromCurrentUser: true
+            senderRole: currentUserRole
         )
 
         MockDataProvider.shared.addMessage(newMessage, for: chatRoomId)
@@ -147,7 +149,7 @@ extension ChatDetailViewController: UITableViewDataSource {
         content.text = message.text
         content.textProperties.numberOfLines = 0
 
-        if message.isFromCurrentUser {
+        if message.senderRole == currentUserRole {
             content.textProperties.color = .systemBlue
             cell.contentView.semanticContentAttribute = .forceRightToLeft
         } else {

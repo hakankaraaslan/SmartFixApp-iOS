@@ -27,6 +27,11 @@ final class MyRequestsViewController: UIViewController {
         setupTableView()
         loadRequests()
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadRequests()
+    }
 
     // MARK: - Setup
 
@@ -51,10 +56,16 @@ final class MyRequestsViewController: UIViewController {
         tableView.delegate = self
     }
 
+//    private func loadRequests() {
+//        requests = MockDataProvider.shared.customerRequests
+//        tableView.reloadData()
+//    }
+    
     private func loadRequests() {
-        requests = MockDataProvider.shared.customerRequests
+        requests = MockDataProvider.shared.customerRequests.filter { $0.status == .open }
         tableView.reloadData()
     }
+    
 }
 
 // MARK: - UITableViewDataSource

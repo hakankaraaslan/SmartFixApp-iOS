@@ -102,6 +102,9 @@ final class OfferCreateViewController: UIViewController {
         configureData()
         setupActions()
     }
+    
+    
+
 
     private func setupUI() {
         title = "Create Offer"
@@ -158,10 +161,13 @@ final class OfferCreateViewController: UIViewController {
                 estimatedTime: estimatedTime
             )
             MockDataProvider.shared.addOffer(createdOffer)
+            if let index = MockDataProvider.shared.openRequests.firstIndex(where: { $0.id == self.requestId }) {
+                MockDataProvider.shared.openRequests.remove(at: index)
+            }
 
             let alert = UIAlertController(
                 title: "Offer Submitted",
-                message: "Offer for request ID: \(createdOffer.requestId)\nPrice: ₺\(createdOffer.price)\nEstimated Time: \(createdOffer.estimatedTime)",
+                message: "Offer for request ID: \(createdOffer.requestId)\nPrice: ₺\(createdOffer.price)\nEstimated Time: \(createdOffer.estimatedTime)\nThis request has been removed from the open requests list.",
                 preferredStyle: .alert
             )
 

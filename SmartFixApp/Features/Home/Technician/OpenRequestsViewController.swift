@@ -21,6 +21,11 @@ final class OpenRequestsViewController: UIViewController {
         setupTableView()
         loadRequests()
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadRequests()
+    }
 
     private func setupUI() {
         title = "Open Requests"

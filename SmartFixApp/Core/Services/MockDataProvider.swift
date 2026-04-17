@@ -122,18 +122,18 @@ final class MockDataProvider {
 
     private var messagesByChatRoomId: [String: [Message]] = [
         "chat-1": [
-            Message(id: UUID().uuidString, text: "Hello, I reviewed your request.", isFromCurrentUser: false),
-            Message(id: UUID().uuidString, text: "Thank you. When are you available?", isFromCurrentUser: true),
-            Message(id: UUID().uuidString, text: "I can come tomorrow morning.", isFromCurrentUser: false)
+            Message(id: UUID().uuidString, text: "Hello, I reviewed your request.", senderRole: .technician),
+            Message(id: UUID().uuidString, text: "Thank you. When are you available?", senderRole: .customer),
+            Message(id: UUID().uuidString, text: "I can come tomorrow morning.", senderRole: .technician)
         ],
         "chat-2": [
-            Message(id: UUID().uuidString, text: "Can you send one more photo?", isFromCurrentUser: false)
+            Message(id: UUID().uuidString, text: "Can you send one more photo?", senderRole: .technician)
         ],
         "chat-3": [
-            Message(id: UUID().uuidString, text: "Can you come this evening?", isFromCurrentUser: false)
+            Message(id: UUID().uuidString, text: "Can you come this evening?", senderRole: .customer)
         ],
         "chat-4": [
-            Message(id: UUID().uuidString, text: "The leak is getting worse.", isFromCurrentUser: false)
+            Message(id: UUID().uuidString, text: "The leak is getting worse.", senderRole: .customer)
         ]
     ]
 

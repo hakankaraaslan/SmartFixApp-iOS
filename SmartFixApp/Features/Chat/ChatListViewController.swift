@@ -25,49 +25,25 @@ final class ChatListViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupDummyData()
+        loadChatRooms()
         setupUI()
         setupTableView()
     }
 
-    private func setupDummyData() {
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadChatRooms()
+    }
+
+    private func loadChatRooms() {
         switch role {
         case .customer:
-            chatRooms = [
-                ChatRoom(
-                    id: UUID().uuidString,
-                    requestId: "req-1",
-                    participantName: "Ahmet Repair Service",
-                    requestTitle: "Refrigerator is not cooling",
-                    lastMessage: "I can come tomorrow morning."
-                ),
-                ChatRoom(
-                    id: UUID().uuidString,
-                    requestId: "req-2",
-                    participantName: "Teknik Destek Pro",
-                    requestTitle: "Kitchen sink leakage",
-                    lastMessage: "Can you send one more photo?"
-                )
-            ]
-
+            chatRooms = MockDataProvider.shared.customerChatRooms
         case .technician:
-            chatRooms = [
-                ChatRoom(
-                    id: UUID().uuidString,
-                    requestId: "req-3",
-                    participantName: "Mehmet Yılmaz",
-                    requestTitle: "Power outlet is not working",
-                    lastMessage: "Can you come this evening?"
-                ),
-                ChatRoom(
-                    id: UUID().uuidString,
-                    requestId: "req-2",
-                    participantName: "Ayşe Demir",
-                    requestTitle: "Kitchen sink leakage",
-                    lastMessage: "The leak is getting worse."
-                )
-            ]
+            chatRooms = MockDataProvider.shared.technicianChatRooms
         }
+
+        tableView.reloadData()
     }
 
     private func setupUI() {
@@ -119,7 +95,8 @@ extension ChatListViewController: UITableViewDelegate {
         let chatDetailVC = ChatDetailViewController(
             chatRoomId: room.id,
             participantName: room.participantName,
-            requestTitle: room.requestTitle
+            requestTitle: room.requestTitle,
+            currentUserRole: role
         )
         navigationController?.pushViewController(chatDetailVC, animated: true)
 

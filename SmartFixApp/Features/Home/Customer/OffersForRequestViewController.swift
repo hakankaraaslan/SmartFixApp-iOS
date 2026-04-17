@@ -41,6 +41,11 @@ final class OffersForRequestViewController: UIViewController {
         setupTableView()
         loadOffers()
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadOffers()
+    }
 
     // MARK: - Setup
 
@@ -65,8 +70,19 @@ final class OffersForRequestViewController: UIViewController {
         tableView.delegate = self
     }
 
+//    private func loadOffers() {
+//        offers = MockDataProvider.shared.offers(for: requestId)
+//        tableView.reloadData()
+//    }
+    
     private func loadOffers() {
-        offers = MockDataProvider.shared.offers(for: requestId)
+        if let request = MockDataProvider.shared.customerRequests.first(where: { $0.id == requestId }),
+           request.status == .open {
+            offers = MockDataProvider.shared.offers(for: requestId)
+        } else {
+            offers = []
+        }
+
         tableView.reloadData()
     }
 }
@@ -120,25 +136,53 @@ extension OffersForRequestViewController: UITableViewDelegate {
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
 
         alert.addAction(UIAlertAction(title: "Accept", style: .default) { _ in
+            if let customerIndex = MockDataProvider.shared.customerRequests.firstIndex(where: { $0.id == offer.requestId }) {
+                let existingRequest = MockDataProvider.shared.customerRequests[customerIndex]
+
+                let updatedRequest = Request(
+                    id: existingRequest.id,
+                    category: existingRequest.category,
+                    title: existingRequest.title,
+                    detailDescription: existingRequest.detailDescription,
+                    status: .accepted
+                )
+
+                MockDataProvider.shared.customerRequests[customerIndex] = updatedRequest
+            }
+
+            if let openIndex = MockDataProvider.shared.openRequests.firstIndex(where: { $0.id == offer.requestId }) {
+                MockDataProvider.shared.openRequests.remove(at: openIndex)
+            }
+
+            self.loadOffers()
+
+            let existingChatRoom = MockDataProvider.shared.customerChatRooms.first {
+                $0.requestId == offer.requestId && $0.participantName == offer.technicianName
+            }
+
             let chatRoomId: String
 
-            switch offer.technicianName {
-            case "Ahmet Repair Service":
-                chatRoomId = "chat-1"
-            case "Teknik Destek Pro":
-                chatRoomId = "chat-2"
-            case "Mehmet Yılmaz":
-                chatRoomId = "chat-3"
-            case "Ayşe Demir":
-                chatRoomId = "chat-4"
-            default:
-                chatRoomId = "chat-1"
+            if let existingChatRoom = existingChatRoom {
+                chatRoomId = existingChatRoom.id
+            } else {
+                let newChatRoom = ChatRoom(
+                    id: UUID().uuidString,
+                    requestId: offer.requestId,
+                    participantName: offer.technicianName,
+                    requestTitle: self.requestTitle,
+                    lastMessage: "Chat started"
+                )
+
+                MockDataProvider.shared.customerChatRooms.append(newChatRoom)
+                MockDataProvider.shared.technicianChatRooms.append(newChatRoom)
+                chatRoomId = newChatRoom.id
             }
 
             let chatDetailVC = ChatDetailViewController(
                 chatRoomId: chatRoomId,
                 participantName: offer.technicianName,
-                requestTitle: self.requestTitle
+                requestTitle: self.requestTitle,
+                currentUserRole: .customer
             )
             self.navigationController?.pushViewController(chatDetailVC, animated: true)
         })
