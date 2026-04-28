@@ -21,6 +21,8 @@ final class MockDataProvider {
             category: "White Goods",
             title: "Refrigerator is not cooling",
             detailDescription: "The refrigerator stopped cooling yesterday evening.",
+            brand: "Samsung",
+            model: "Refrigerator X100",
             status: .open
         ),
         Request(
@@ -28,6 +30,8 @@ final class MockDataProvider {
             category: "Plumbing",
             title: "Kitchen sink leakage",
             detailDescription: "Water is leaking from under the sink cabinet.",
+            brand: "Samsung",
+            model: "Refrigerator X100",
             status: .accepted
         )
     ]
@@ -38,6 +42,8 @@ final class MockDataProvider {
             category: "White Goods",
             title: "Refrigerator is not cooling",
             detailDescription: "The refrigerator stopped cooling yesterday evening.",
+            brand: nil,
+            model: nil,
             status: .open
         ),
         Request(
@@ -45,6 +51,8 @@ final class MockDataProvider {
             category: "Electrical",
             title: "Power outlet is not working",
             detailDescription: "One outlet in the living room has no power.",
+            brand: nil,
+            model: nil,
             status: .open
         ),
         Request(
@@ -52,6 +60,8 @@ final class MockDataProvider {
             category: "Plumbing",
             title: "Kitchen sink leakage",
             detailDescription: "Water is leaking from under the sink cabinet.",
+            brand: nil,
+            model: nil,
             status: .accepted
         )
     ]

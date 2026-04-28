@@ -82,7 +82,9 @@ extension OpenRequestsViewController: UITableViewDelegate {
             requestId: request.id,
             requestTitle: request.title,
             category: request.category,
-            descriptionText: request.detailDescription
+            descriptionText: request.detailDescription,
+            brand: request.brand,
+            model: request.model
         )
         navigationController?.pushViewController(offerVC, animated: true)
 

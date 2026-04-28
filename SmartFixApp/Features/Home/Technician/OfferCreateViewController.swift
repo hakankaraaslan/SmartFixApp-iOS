@@ -13,6 +13,8 @@ final class OfferCreateViewController: UIViewController {
     private let requestTitle: String
     private let category: String
     private let descriptionText: String
+    private let brand: String?
+    private let model: String?
 
     private let titleLabel: UILabel = {
         let label = UILabel()
@@ -22,6 +24,22 @@ final class OfferCreateViewController: UIViewController {
     }()
 
     private let categoryLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 16, weight: .medium)
+        label.textColor = .secondaryLabel
+        label.numberOfLines = 0
+        return label
+    }()
+    
+    private let estimatedPriceRangeLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 16, weight: .semibold)
+        label.textColor = .systemGreen
+        label.numberOfLines = 0
+        return label
+    }()
+    
+    private let deviceLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 16, weight: .medium)
         label.textColor = .secondaryLabel
@@ -71,6 +89,8 @@ final class OfferCreateViewController: UIViewController {
         let stack = UIStackView(arrangedSubviews: [
             titleLabel,
             categoryLabel,
+            deviceLabel,
+            estimatedPriceRangeLabel,
             descriptionLabel,
             priceTextField,
             estimatedTimeTextField,
@@ -84,11 +104,13 @@ final class OfferCreateViewController: UIViewController {
         return stack
     }()
 
-    init(requestId: String, requestTitle: String, category: String, descriptionText: String) {
+    init(requestId: String, requestTitle: String, category: String, descriptionText: String, brand: String?, model: String?) {
         self.requestId = requestId
         self.requestTitle = requestTitle
         self.category = category
         self.descriptionText = descriptionText
+        self.brand = brand
+        self.model = model
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -126,6 +148,22 @@ final class OfferCreateViewController: UIViewController {
     private func configureData() {
         titleLabel.text = requestTitle
         categoryLabel.text = "Category: \(category)"
+        let deviceParts = [brand, model]
+            .compactMap { $0 }
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+        if deviceParts.isEmpty {
+            deviceLabel.text = "Device: Not specified"
+        } else {
+            deviceLabel.text = "Device: \(deviceParts.joined(separator: " "))"
+        }
+        let priceRange = PriceEstimator.estimate(
+            category: category,
+            brand: brand,
+            model: model,
+            description: descriptionText
+        )
+        estimatedPriceRangeLabel.text = "Estimated Price Range: ₺\(priceRange.min) - ₺\(priceRange.max)"
         descriptionLabel.text = descriptionText
     }
 

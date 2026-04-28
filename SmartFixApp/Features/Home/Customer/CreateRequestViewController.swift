@@ -63,6 +63,38 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
         return textView
     }()
 
+    private let brandLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Brand"
+        label.font = .systemFont(ofSize: 16, weight: .semibold)
+        return label
+    }()
+
+    private let brandTextField: UITextField = {
+        let textField = UITextField()
+        textField.placeholder = "Brand (e.g. Samsung)"
+        textField.borderStyle = .roundedRect
+        textField.autocapitalizationType = .words
+        textField.autocorrectionType = .no
+        return textField
+    }()
+
+    private let modelLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Model"
+        label.font = .systemFont(ofSize: 16, weight: .semibold)
+        return label
+    }()
+
+    private let modelTextField: UITextField = {
+        let textField = UITextField()
+        textField.placeholder = "Model (e.g. Odyssey G5)"
+        textField.borderStyle = .roundedRect
+        textField.autocapitalizationType = .words
+        textField.autocorrectionType = .no
+        return textField
+    }()
+
     private let selectedPhotoLabel: UILabel = {
         let label = UILabel()
         label.text = "No photo selected"
@@ -117,6 +149,10 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
             categorySegmentedControl,
             descriptionLabel,
             descriptionTextView,
+            brandLabel,
+            brandTextField,
+            modelLabel,
+            modelTextField,
             selectedPhotoLabel,
             selectedImageView,
             addPhotoButton,
@@ -175,6 +211,8 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
             stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24),
 
             descriptionTextView.heightAnchor.constraint(equalToConstant: 140),
+            brandTextField.heightAnchor.constraint(equalToConstant: 44),
+            modelTextField.heightAnchor.constraint(equalToConstant: 44),
             selectedImageView.heightAnchor.constraint(equalToConstant: 180),
             addPhotoButton.heightAnchor.constraint(equalToConstant: 52),
             submitButton.heightAnchor.constraint(equalToConstant: 52)
@@ -222,6 +260,10 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
             self.setLoading(false)
 
             let category = self.selectedCategoryTitle()
+            let brandText = self.brandTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let modelText = self.modelTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let brand = brandText.isEmpty ? nil : brandText
+            let model = modelText.isEmpty ? nil : modelText
 
             let generatedTitle = String(descriptionText.prefix(30))
 
@@ -230,6 +272,8 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
                 category: category,
                 title: generatedTitle.isEmpty ? "New Repair Request" : generatedTitle,
                 detailDescription: descriptionText,
+                brand: brand,
+                model: model,
                 status: .open
             )
 
@@ -268,6 +312,8 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
 
         categorySegmentedControl.isEnabled = !isLoading
         descriptionTextView.isEditable = !isLoading
+        brandTextField.isEnabled = !isLoading
+        modelTextField.isEnabled = !isLoading
         addPhotoButton.isEnabled = !isLoading
         submitButton.isEnabled = !isLoading
     }

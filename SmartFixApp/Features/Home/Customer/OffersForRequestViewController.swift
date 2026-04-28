@@ -17,6 +17,16 @@ final class OffersForRequestViewController: UIViewController {
 
     private let requestId: String
     private let requestTitle: String
+
+    private let priceRangeLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 16, weight: .semibold)
+        label.textColor = .systemGreen
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        return label
+    }()
+
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
     private var offers: [Offer] = []
@@ -53,11 +63,18 @@ final class OffersForRequestViewController: UIViewController {
         title = "Offers"
         view.backgroundColor = .systemBackground
 
+        view.addSubview(priceRangeLabel)
+        priceRangeLabel.translatesAutoresizingMaskIntoConstraints = false
+
         view.addSubview(tableView)
         tableView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            priceRangeLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+            priceRangeLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            priceRangeLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+
+            tableView.topAnchor.constraint(equalTo: priceRangeLabel.bottomAnchor, constant: 12),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
@@ -78,8 +95,16 @@ final class OffersForRequestViewController: UIViewController {
     private func loadOffers() {
         if let request = MockDataProvider.shared.customerRequests.first(where: { $0.id == requestId }),
            request.status == .open {
+            let priceRange = PriceEstimator.estimate(
+                category: request.category,
+                brand: request.brand,
+                model: request.model,
+                description: request.detailDescription
+            )
+            priceRangeLabel.text = "Estimated Price Range: ₺\(priceRange.min) - ₺\(priceRange.max)"
             offers = MockDataProvider.shared.offers(for: requestId)
         } else {
+            priceRangeLabel.text = ""
             offers = []
         }
 
@@ -144,6 +169,8 @@ extension OffersForRequestViewController: UITableViewDelegate {
                     category: existingRequest.category,
                     title: existingRequest.title,
                     detailDescription: existingRequest.detailDescription,
+                    brand: existingRequest.brand,
+                    model: existingRequest.model,
                     status: .accepted
                 )
 
