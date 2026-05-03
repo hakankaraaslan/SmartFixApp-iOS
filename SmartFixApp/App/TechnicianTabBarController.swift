@@ -25,18 +25,40 @@ final class TechnicianTabBarController: UITabBarController {
     }
 
     @objc private func logoutTapped() {
-        let loginVC = LoginViewController()
-        let nav = UINavigationController(rootViewController: loginVC)
+        AuthService.shared.logout { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
 
-        if let sceneDelegate = view.window?.windowScene?.delegate as? SceneDelegate {
-            sceneDelegate.window?.rootViewController = nav
-            sceneDelegate.window?.makeKeyAndVisible()
+                switch result {
+
+                case .success:
+
+                    let loginVC = LoginViewController()
+
+                    let nav = UINavigationController(rootViewController: loginVC)
+                    nav.navigationBar.prefersLargeTitles = true
+
+                    self.view.window?.rootViewController = nav
+                    self.view.window?.makeKeyAndVisible()
+
+                case .failure(let error):
+
+                    let alert = UIAlertController(
+                        title: "Logout Failed",
+                        message: error.localizedDescription,
+                        preferredStyle: .alert
+                    )
+
+                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+
+                    self.present(alert, animated: true)
+                }
+            }
         }
     }
 
     private func setupTabs() {
         let homeVC = TechnicianHomeViewController()
-        homeVC.title = "Home"
         let homeNav = UINavigationController(rootViewController: homeVC)
         homeNav.tabBarItem = UITabBarItem(title: "Home", image: UIImage(systemName: "house"), tag: 0)
 
@@ -52,5 +74,6 @@ final class TechnicianTabBarController: UITabBarController {
 
         viewControllers = [homeNav, openRequestsNav, chatsNav]
         tabBar.tintColor = .systemBlue
+        navigationItem.largeTitleDisplayMode = .never
     }
 }

@@ -26,11 +26,22 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let window = UIWindow(windowScene: windowScene)
         self.window = window
 
-        let loginVC = LoginViewController()
-        let nav = UINavigationController(rootViewController: loginVC)
-        nav.navigationBar.prefersLargeTitles = true
+        if AuthService.shared.currentUserId != nil,
+           let role = SessionManager.shared.role {
 
-        window.rootViewController = nav
+            if SessionManager.shared.isAddressCompleted {
+                window.rootViewController = HomeRouter.makeHome(for: role)
+            } else if let uid = SessionManager.shared.uid {
+                let vc = AddAddressViewController(uid: uid, userRole: role)
+                window.rootViewController = UINavigationController(rootViewController: vc)
+            } else {
+                window.rootViewController = UINavigationController(rootViewController: LoginViewController())
+            }
+
+        } else {
+            window.rootViewController = UINavigationController(rootViewController: LoginViewController())
+        }
+
         window.makeKeyAndVisible()
     }
 

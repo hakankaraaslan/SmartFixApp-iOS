@@ -9,11 +9,10 @@ import UIKit
 import FirebaseAuth
 
 final class RegisterViewController: UIViewController {
-
+    
     private let authService = AuthService.shared
-
+    
     // MARK: - UI Elements
-
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Create Account"
@@ -21,7 +20,7 @@ final class RegisterViewController: UIViewController {
         label.textAlignment = .center
         return label
     }()
-
+    
     private let subtitleLabel: UILabel = {
         let label = UILabel()
         label.text = "Register as Customer or Technician"
@@ -30,13 +29,13 @@ final class RegisterViewController: UIViewController {
         label.textAlignment = .center
         return label
     }()
-
+    
     private let roleSegmentedControl: UISegmentedControl = {
         let control = UISegmentedControl(items: ["Customer", "Technician"])
         control.selectedSegmentIndex = 0
         return control
     }()
-
+    
     private let fullNameTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Full Name"
@@ -44,7 +43,7 @@ final class RegisterViewController: UIViewController {
         textField.autocapitalizationType = .words
         return textField
     }()
-
+    
     private let emailTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Email"
@@ -54,7 +53,7 @@ final class RegisterViewController: UIViewController {
         textField.autocorrectionType = .no
         return textField
     }()
-
+    
     private let passwordTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Password"
@@ -64,7 +63,7 @@ final class RegisterViewController: UIViewController {
         textField.autocorrectionType = .no
         return textField
     }()
-
+    
     private let confirmPasswordTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Confirm Password"
@@ -74,7 +73,7 @@ final class RegisterViewController: UIViewController {
         textField.autocorrectionType = .no
         return textField
     }()
-
+    
     private let registerButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("Create Account", for: .normal)
@@ -84,13 +83,13 @@ final class RegisterViewController: UIViewController {
         button.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
         return button
     }()
-
+    
     private let activityIndicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView(style: .medium)
         indicator.hidesWhenStopped = true
         return indicator
     }()
-
+    
     private lazy var stackView: UIStackView = {
         let stack = UIStackView(arrangedSubviews: [
             titleLabel,
@@ -109,28 +108,28 @@ final class RegisterViewController: UIViewController {
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
-
+    
     // MARK: - Lifecycle
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupActions()
     }
-
+    
     // MARK: - Setup
-
+    
     private func setupUI() {
         view.backgroundColor = .systemBackground
         title = "Register"
-
+        
         view.addSubview(stackView)
-
+        
         NSLayoutConstraint.activate([
             stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
             stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
             stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-
+            
             fullNameTextField.heightAnchor.constraint(equalToConstant: 50),
             emailTextField.heightAnchor.constraint(equalToConstant: 50),
             passwordTextField.heightAnchor.constraint(equalToConstant: 50),
@@ -138,19 +137,19 @@ final class RegisterViewController: UIViewController {
             registerButton.heightAnchor.constraint(equalToConstant: 50)
         ])
     }
-
+    
     private func setupActions() {
         registerButton.addTarget(self, action: #selector(registerButtonTapped), for: .touchUpInside)
     }
-
+    
     // MARK: - Actions
-
+    
     @objc private func registerButtonTapped() {
         handleRegister()
     }
-
+    
     // MARK: - Register Flow
-
+    
     private func handleRegister() {
         guard let fullName = fullNameTextField.text, !fullName.trimmingCharacters(in: .whitespaces).isEmpty,
               let email = emailTextField.text, !email.trimmingCharacters(in: .whitespaces).isEmpty,
@@ -159,48 +158,68 @@ final class RegisterViewController: UIViewController {
             showAlert(title: "Missing Information", message: "Please fill in all fields.")
             return
         }
-
+        
         guard email.contains("@"), email.contains(".") else {
             showAlert(title: "Invalid Email", message: "Please enter a valid email address.")
             return
         }
-
+        
         guard password.count >= 6 else {
             showAlert(title: "Weak Password", message: "Password must be at least 6 characters.")
             return
         }
-
+        
         guard password == confirmPassword else {
             showAlert(title: "Password Mismatch", message: "Passwords do not match.")
             return
         }
-
+        
         setLoading(true)
-
-        authService.register(email: email, password: password) { [weak self] success in
-            guard let self = self else { return }
-
-            self.setLoading(false)
-
-            if success {
-                let selectedRole: UserRole = self.roleSegmentedControl.selectedSegmentIndex == 0 ? .customer : .technician
-                let homeVC = HomeRouter.makeHome(for: selectedRole)
-                self.navigationController?.setViewControllers([homeVC], animated: true)
-            } else {
-                self.showAlert(title: "Registration Failed", message: "Please try again.")
+        
+        let selectedRole: UserRole = self.roleSegmentedControl.selectedSegmentIndex == 0 ? .customer : .technician
+        
+        authService.register(
+            email: email,
+            password: password,
+            fullName: fullName,
+            role: selectedRole
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                
+                self.setLoading(false)
+                
+                switch result {
+                case .success(let uid):
+                    let addAddressVC = AddAddressViewController(
+                        uid: uid,
+                        userRole: selectedRole
+                    )
+                    SessionManager.shared.uid = uid
+                    SessionManager.shared.role = selectedRole
+                    SessionManager.shared.isAddressCompleted = false
+                    self.navigationController?.pushViewController(addAddressVC, animated: true)
+                case .failure(let error):
+            
+                    self.showAlert(
+                        title: "Registration Failed",
+                        message: error.localizedDescription
+                    )
+                }
             }
         }
+        
     }
-
+    
     // MARK: - Helpers
-
+    
     private func setLoading(_ isLoading: Bool) {
         if isLoading {
             activityIndicator.startAnimating()
         } else {
             activityIndicator.stopAnimating()
         }
-
+        
         fullNameTextField.isEnabled = !isLoading
         emailTextField.isEnabled = !isLoading
         passwordTextField.isEnabled = !isLoading
@@ -208,7 +227,7 @@ final class RegisterViewController: UIViewController {
         roleSegmentedControl.isEnabled = !isLoading
         registerButton.isEnabled = !isLoading
     }
-
+    
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))

@@ -53,7 +53,6 @@ final class TechnicianHomeViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Technician Home"
         view.backgroundColor = .systemBackground
         setupUI()
         setupActions()

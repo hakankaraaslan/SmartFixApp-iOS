@@ -6,22 +6,13 @@
 //
 
 import UIKit
-// UIKit iOS uygulamalarında kullanıcı arayüzü oluşturmak için kullanılan temel framework'tür.
-// ViewController, UILabel, UIButton gibi tüm görsel bileşenler bu framework içinde yer alır.
 
 final class LoginViewController: UIViewController {
-    // LoginViewController uygulamanın giriş ekranını temsil eder.
-    // Kullanıcı burada email ve password girerek sisteme login olabilir veya yeni hesap oluşturabilir.
 
     private let authService = AuthService.shared
-    // AuthService singleton instance'ı alınır.
-    // Login ve register işlemleri bu servis üzerinden gerçekleştirilir.
-
     // MARK: - UI Elements
-    // Bu bölümde ekranda gösterilecek tüm kullanıcı arayüzü bileşenleri tanımlanır.
 
     private let titleLabel: UILabel = {
-        // titleLabel uygulamanın başlığını gösteren label'dır.
         let label = UILabel()
         label.text = "SmartFix"
         label.font = .systemFont(ofSize: 32, weight: .bold)
@@ -30,7 +21,6 @@ final class LoginViewController: UIViewController {
     }()
 
     private let subtitleLabel: UILabel = {
-        // subtitleLabel kullanıcıya kısa bir açıklama gösterir.
         let label = UILabel()
         label.text = "Login or register to continue"
         label.font = .systemFont(ofSize: 16, weight: .regular)
@@ -40,14 +30,12 @@ final class LoginViewController: UIViewController {
     }()
 
     private let roleSegmentedControl: UISegmentedControl = {
-        // Kullanıcının Customer mı yoksa Technician mı olduğunu seçmesini sağlar.
         let control = UISegmentedControl(items: ["Customer", "Technician"])
         control.selectedSegmentIndex = 0
         return control
     }()
 
     private let emailTextField: UITextField = {
-        // Kullanıcının email adresini gireceği metin alanıdır.
         let textField = UITextField()
         textField.placeholder = "Email"
         textField.borderStyle = .roundedRect
@@ -58,7 +46,6 @@ final class LoginViewController: UIViewController {
     }()
 
     private let passwordTextField: UITextField = {
-        // Kullanıcının şifresini gireceği metin alanıdır.
         let textField = UITextField()
         textField.placeholder = "Password"
         textField.borderStyle = .roundedRect
@@ -69,7 +56,6 @@ final class LoginViewController: UIViewController {
     }()
 
     private let loginButton: UIButton = {
-        // Kullanıcı mevcut hesabıyla giriş yapmak istediğinde bu butona basar.
         let button = UIButton(type: .system)
         button.setTitle("Login", for: .normal)
         button.backgroundColor = .systemBlue
@@ -80,7 +66,6 @@ final class LoginViewController: UIViewController {
     }()
 
     private let registerButton: UIButton = {
-        // Kullanıcı yeni hesap oluşturmak istediğinde bu butona basar.
         let button = UIButton(type: .system)
         button.setTitle("Register", for: .normal)
         button.backgroundColor = .systemGray5
@@ -91,14 +76,12 @@ final class LoginViewController: UIViewController {
     }()
 
     private let activityIndicator: UIActivityIndicatorView = {
-        // Yükleme işlemi sırasında kullanıcıya işlem devam ediyor göstermek için kullanılır.
         let indicator = UIActivityIndicatorView(style: .medium)
         indicator.hidesWhenStopped = true
         return indicator
     }()
 
     private lazy var stackView: UIStackView = {
-        // StackView tüm UI bileşenlerini dikey olarak düzenlemek için kullanılır.
         let stack = UIStackView(arrangedSubviews: [
             titleLabel,
             subtitleLabel,
@@ -117,24 +100,15 @@ final class LoginViewController: UIViewController {
     }()
 
     // MARK: - Lifecycle
-    // ViewController yaşam döngüsü metotları bu bölümde yer alır.
-
     override func viewDidLoad() {
-        // View yüklendiğinde çalışan ilk metottur.
-        // UI kurulumu ve aksiyon tanımlamaları burada yapılır.
         super.viewDidLoad()
         setupUI()
         setupActions()
     }
 
     // MARK: - Setup
-    // UI kurulumu ve buton aksiyonlarının tanımlandığı bölüm.
-
     private func setupUI() {
-        // Ekrandaki UI bileşenlerini view'a ekler ve AutoLayout constraint'lerini kurar.
         view.backgroundColor = .systemBackground
-        //title = "Login"
-
         view.addSubview(stackView)
 
         NSLayoutConstraint.activate([
@@ -149,18 +123,15 @@ final class LoginViewController: UIViewController {
         ])
     }
 
+    
+    // MARK: - Actions
     private func setupActions() {
-        // Butonlara basıldığında çalışacak aksiyonlar burada tanımlanır.
         loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
         registerButton.addTarget(self, action: #selector(registerButtonTapped), for: .touchUpInside)
     }
 
-    // MARK: - Actions
-    // Kullanıcının butonlara bastığında tetiklenen metotlar.
-
     @objc private func loginButtonTapped() {
-        // Login butonuna basıldığında authentication akışını başlatır.
-        handleAuthAction(actionType: "Login")
+        handleLogin()
     }
 
     @objc private func registerButtonTapped() {
@@ -169,10 +140,7 @@ final class LoginViewController: UIViewController {
     }
 
     // MARK: - Auth Flow
-    // Kullanıcı doğrulama (authentication) işlemlerinin yönetildiği bölüm.
-
-    private func handleAuthAction(actionType: String) {
-        // Login veya Register işlemlerinin ortak mantığını yöneten fonksiyon.
+    private func handleLogin() {
         guard let email = emailTextField.text, !email.trimmingCharacters(in: .whitespaces).isEmpty,
               let password = passwordTextField.text, !password.trimmingCharacters(in: .whitespaces).isEmpty else {
             showAlert(title: "Missing Information", message: "Please enter email and password.")
@@ -191,37 +159,61 @@ final class LoginViewController: UIViewController {
 
         setLoading(true)
 
-        let completion: (Bool) -> Void = { [weak self] success in
-            guard let self = self else { return }
 
-            self.setLoading(false)
+        authService.login(email: email, password: password) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
 
-            if success {
-                let selectedRole: UserRole = self.roleSegmentedControl.selectedSegmentIndex == 0 ? .customer : .technician
-                let homeVC = HomeRouter.makeHome(for: selectedRole)
-                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                   let sceneDelegate = windowScene.delegate as? SceneDelegate {
+                switch result {
+                case .success(let uid):
+                    FirestoreService.shared.fetchUser(uid: uid) { [weak self] userResult in
+                        DispatchQueue.main.async {
+                            guard let self else { return }
 
-                    sceneDelegate.window?.rootViewController = homeVC
-                    sceneDelegate.window?.makeKeyAndVisible()
+                            self.setLoading(false)
+
+                            switch userResult {
+                            case .success(let user):
+                                
+                                SessionManager.shared.uid = user.uid
+                                SessionManager.shared.role = user.role
+                                SessionManager.shared.isAddressCompleted = user.isAddressCompleted
+                                
+                                if user.isAddressCompleted {
+                                    let homeVC = HomeRouter.makeHome(for: user.role)
+                                    self.view.window?.rootViewController = homeVC
+                                    self.view.window?.makeKeyAndVisible()
+                                } else {
+                                    let addAddressVC = AddAddressViewController(
+                                        uid: user.uid,
+                                        userRole: user.role
+                                    )
+                                    self.navigationController?.pushViewController(addAddressVC, animated: true)
+                                }
+
+                            case .failure(let error):
+                                self.showAlert(
+                                    title: "User Data Error",
+                                    message: error.localizedDescription
+                                )
+                            }
+                        }
+                    }
+
+                case .failure(let error):
+                    self.setLoading(false)
+                    self.showAlert(
+                        title: "Login Failed",
+                        message: "Email or password is incorrect."
+                    )
                 }
-            } else {
-                self.showAlert(title: "Authentication Failed", message: "Please try again.")
             }
         }
-
-        if actionType == "Login" {
-            authService.login(email: email, password: password, completion: completion)
-        } else {
-            authService.register(email: email, password: password, completion: completion)
-        }
+        
     }
 
     // MARK: - Helpers
-    // Yardımcı fonksiyonlar burada bulunur.
-
     private func setLoading(_ isLoading: Bool) {
-        // Yükleme sırasında UI elemanlarını pasif hale getirir ve loading indicator gösterir.
         if isLoading {
             activityIndicator.startAnimating()
         } else {
@@ -236,7 +228,6 @@ final class LoginViewController: UIViewController {
     }
 
     private func showAlert(title: String, message: String) {
-        // Kullanıcıya hata veya bilgilendirme mesajı göstermek için alert oluşturur.
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)

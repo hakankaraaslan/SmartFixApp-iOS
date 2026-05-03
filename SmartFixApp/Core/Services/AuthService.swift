@@ -6,48 +6,113 @@
 //
 
 import Foundation
-// Foundation Swift'in temel veri tiplerini ve altyapı araçlarını sağlayan framework'tür.
-// Ağ işlemleri, veri yapıları ve temel uygulama mantığı için kullanılır.
+import FirebaseAuth
+import FirebaseFirestore
 
 final class AuthService {
-    // AuthService uygulamadaki kimlik doğrulama (authentication) işlemlerini yöneten servis sınıfıdır.
-    // Login ve register gibi kullanıcı giriş işlemleri burada toplanır.
 
     static let shared = AuthService()
-    // Singleton pattern kullanılır.
-    // Böylece uygulama boyunca AuthService'in tek bir instance'ı kullanılır.
-
     private init() {}
-    // private init sayesinde dışarıdan yeni AuthService nesnesi oluşturulamaz.
-    // Bu da singleton yapısını korumak için kullanılır.
 
-    func login(email: String, password: String, completion: @escaping (Bool) -> Void) {
-        // Kullanıcının sisteme giriş yapmasını sağlayan fonksiyondur.
-        // email ve password parametreleri kullanıcıdan alınan giriş bilgileridir.
-        // completion closure'ı ise işlem tamamlandığında sonucu geri döndürmek için kullanılır.
+    private let db = Firestore.firestore()
 
-        // MOCK LOGIN (Firebase gelene kadar)
-        // Şu anda gerçek bir backend olmadığı için sahte (mock) login işlemi yapılır.
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            // asyncAfter belirli bir süre gecikmeli işlem çalıştırmak için kullanılır.
-            // Burada gerçek ağ isteği varmış gibi 1 saniyelik gecikme simüle edilir.
-            completion(true)
-            // completion(true) login işleminin başarılı olduğunu simüle eder.
-        }
-
+    var currentUserId: String? {
+        Auth.auth().currentUser?.uid
     }
 
-    func register(email: String, password: String, completion: @escaping (Bool) -> Void) {
-        // Yeni kullanıcı oluşturma işlemini temsil eden fonksiyondur.
-        // Gerçek projede burada Firebase Auth register işlemi yapılacaktır.
+    func register(
+        email: String,
+        password: String,
+        fullName: String,
+        role: UserRole,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
+        Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            // Gerçek backend işlemi varmış gibi gecikme simülasyonu yapılır.
-            completion(true)
-            // Kullanıcı kaydının başarılı olduğu varsayılır.
+            guard let uid = result?.user.uid else {
+                completion(.failure(AuthServiceError.userNotFound))
+                return
+            }
+
+            let data: [String: Any] = [
+                "uid": uid,
+                "email": email,
+                "fullName": fullName,
+                "role": role.rawValue,
+                "isAddressCompleted": false,
+                "createdAt": Timestamp(date: Date())
+            ]
+
+            self?.db.collection("users")
+                .document(uid)
+                .setData(data) { error in
+                    if let error {
+                        completion(.failure(error))
+                    } else {
+                        completion(.success(uid))
+                    }
+                }
         }
-
     }
 
+    func login(
+        email: String,
+        password: String,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
+        Auth.auth().signIn(withEmail: email, password: password) { result, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let uid = result?.user.uid else {
+                completion(.failure(AuthServiceError.userNotFound))
+                return
+            }
+
+            completion(.success(uid))
+        }
+    }
+
+    func logout(completion: @escaping (Result<Void, Error>) -> Void) {
+        do {
+            try Auth.auth().signOut()
+            SessionManager.shared.clear()
+            completion(.success(()))
+        } catch {
+            completion(.failure(error))
+        }
+    }
+    
+    func fetchUserRole(
+        uid: String,
+        completion: @escaping (Result<UserRole, Error>) -> Void
+    ) {
+        db.collection("users").document(uid).getDocument { snapshot, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+
+            guard
+                let data = snapshot?.data(),
+                let roleRawValue = data["role"] as? String,
+                let role = UserRole(rawValue: roleRawValue)
+            else {
+                completion(.failure(AuthServiceError.userNotFound))
+                return
+            }
+
+            completion(.success(role))
+        }
+    }
+}
+
+enum AuthServiceError: Error {
+    case userNotFound
 }

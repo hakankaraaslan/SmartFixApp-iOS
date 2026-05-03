@@ -6,8 +6,6 @@
 //
 
 import UIKit
-// UIKit iOS uygulamalarında kullanıcı arayüzü oluşturmak için kullanılan temel framework'tür.
-// ViewController, ekranların yönetilmesini ve UI bileşenlerinin kullanılmasını sağlar.
 
 final class CustomerHomeViewController: UIViewController {
     // CustomerHomeViewController müşteri rolündeki kullanıcıların göreceği ana ekranı temsil eder.
@@ -67,14 +65,9 @@ final class CustomerHomeViewController: UIViewController {
     }()
 
     override func viewDidLoad() {
-        // ViewController belleğe yüklendiğinde çalışan ilk lifecycle metodudur.
-        // Arayüz ayarları ve başlangıç konfigürasyonları genellikle burada yapılır.
         super.viewDidLoad()
-        // UIViewController'ın kendi başlangıç işlemlerini gerçekleştirmesi için çağrılır.
-        title = "Customer Home"
-        // Navigation bar üzerinde görünecek ekran başlığını belirler.
         view.backgroundColor = .systemBackground
-        // Ekranın arka plan rengini sistem temasına uygun olacak şekilde ayarlar.
+        navigationItem.largeTitleDisplayMode = .never
         setupUI()
         setupActions()
     }

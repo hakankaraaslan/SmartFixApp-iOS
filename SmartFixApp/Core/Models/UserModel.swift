@@ -8,20 +8,15 @@
 import Foundation
 
 struct UserModel: Codable {
-    var id: Int
-    var userType: userTypes
-    var name: String
+    var uid: String
     var email: String
-    var password: String
-    var phone: String
-    var address: String
-    var isActive: Bool
-   
+    var fullName: String
+    var role: UserRole
+    var isAddressCompleted: Bool
+    var address: UserAddress?
 }
 
-enum userTypes : Codable {
-    case member
-    case tecnician
+enum UserRole: String, Codable {
+    case customer
+    case technician
 }
-
-
