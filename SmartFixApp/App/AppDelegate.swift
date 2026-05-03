@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import FirebaseCore
 // UIKit iOS uygulamalarında kullanıcı arayüzü oluşturmak için kullanılan temel framework'tür.
 // ViewController, Button, Navigation gibi temel UI bileşenleri bu framework içinde yer alır.
 
@@ -21,6 +22,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Uygulama ilk açıldığında çalışan metottur.
         // Genel ayarlar, servis başlatma işlemleri veya başlangıç yapılandırmaları burada yapılır.
+        FirebaseApp.configure()
         return true
     }
 

@@ -15,4 +15,4 @@ struct Request {
     let brand: String?
     let model: String?
     let status: RequestStatus
-}
+    }
