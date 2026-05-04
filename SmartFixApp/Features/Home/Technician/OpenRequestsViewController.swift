@@ -9,11 +9,9 @@ import UIKit
 
 final class OpenRequestsViewController: UIViewController {
 
-    
-
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
-    private var requests: [Request] = []
+    private var requests: [RepairRequestModel] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -49,8 +47,8 @@ final class OpenRequestsViewController: UIViewController {
     }
 
     private func loadRequests() {
-        requests = MockDataProvider.shared.openRequests.filter { $0.status == .open }
-        tableView.reloadData()
+//        requests = MockDataProvider.shared.openRequests.filter { $0.status == .open }
+//        tableView.reloadData()
     }
 }
 

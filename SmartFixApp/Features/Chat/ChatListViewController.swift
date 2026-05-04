@@ -36,12 +36,12 @@ final class ChatListViewController: UIViewController {
     }
 
     private func loadChatRooms() {
-        switch role {
-        case .customer:
-            chatRooms = MockDataProvider.shared.customerChatRooms
-        case .technician:
-            chatRooms = MockDataProvider.shared.technicianChatRooms
-        }
+//        switch role {
+//        case .customer:
+////             chatRooms = MockDataProvider.shared.customerChatRooms
+//        case .technician:
+////            chatRooms = MockDataProvider.shared.technicianChatRooms
+//        }
 
         tableView.reloadData()
     }

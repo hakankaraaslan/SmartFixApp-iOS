@@ -38,12 +38,28 @@ final class FirestoreService {
 
             let isAddressCompleted = data["isAddressCompleted"] as? Bool ?? false
 
+            var address: UserAddress?
+
+            if let addressData = data["address"] as? [String: Any] {
+                address = UserAddress(
+                    city: addressData["city"] as? String ?? "",
+                    state: addressData["state"] as? String ?? "",
+                    neighborhood: addressData["neighborhood"] as? String ?? "",
+                    street: addressData["street"] as? String ?? "",
+                    buildingNumber: addressData["buildingNumber"] as? String ?? "",
+                    floor: addressData["floor"] as? String ?? "",
+                    doorNumber: addressData["doorNumber"] as? String ?? "",
+                    phoneNumber: addressData["phoneNumber"] as? String ?? ""
+                )
+            }
+
             let user = UserModel(
                 uid: uid,
                 email: email,
                 fullName: fullName,
                 role: role,
-                isAddressCompleted: isAddressCompleted
+                isAddressCompleted: isAddressCompleted,
+                address: address
             )
 
             completion(.success(user))

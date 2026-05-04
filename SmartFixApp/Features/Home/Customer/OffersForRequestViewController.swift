@@ -9,10 +9,6 @@ import UIKit
 
 final class OffersForRequestViewController: UIViewController {
 
-    // MARK: - Model
-
-
-
     // MARK: - Properties
 
     private let requestId: String
@@ -93,22 +89,22 @@ final class OffersForRequestViewController: UIViewController {
 //    }
     
     private func loadOffers() {
-        if let request = MockDataProvider.shared.customerRequests.first(where: { $0.id == requestId }),
-           request.status == .open {
-            let priceRange = PriceEstimator.estimate(
-                category: request.category,
-                brand: request.brand,
-                model: request.model,
-                description: request.detailDescription
-            )
-            priceRangeLabel.text = "Estimated Price Range: ₺\(priceRange.min) - ₺\(priceRange.max)"
-            offers = MockDataProvider.shared.offers(for: requestId)
-        } else {
-            priceRangeLabel.text = ""
-            offers = []
-        }
-
-        tableView.reloadData()
+//        if let request = MockDataProvider.shared.customerRequests.first(where: { $0.id == requestId }),
+//           request.status == .open {
+//            let priceRange = PriceEstimator.estimate(
+//                category: request.category,
+//                brand: request.brand,
+//                model: request.model,
+//                description: request.detailDescription
+//            )
+//            priceRangeLabel.text = "Estimated Price Range: ₺\(priceRange.min) - ₺\(priceRange.max)"
+//            offers = MockDataProvider.shared.offers(for: requestId)
+//        } else {
+//            priceRangeLabel.text = ""
+//            offers = []
+//        }
+//
+//        tableView.reloadData()
     }
 }
 
@@ -145,76 +141,76 @@ extension OffersForRequestViewController: UITableViewDataSource {
 
 extension OffersForRequestViewController: UITableViewDelegate {
 
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let offer = offers[indexPath.row]
-
-        let alert = UIAlertController(
-            title: "Accept Offer?",
-            message: """
-            Technician: \(offer.technicianName)
-            Price: ₺\(offer.price)
-            Estimated Time: \(offer.estimatedTime)
-            """,
-            preferredStyle: .alert
-        )
-
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-
-        alert.addAction(UIAlertAction(title: "Accept", style: .default) { _ in
-            if let customerIndex = MockDataProvider.shared.customerRequests.firstIndex(where: { $0.id == offer.requestId }) {
-                let existingRequest = MockDataProvider.shared.customerRequests[customerIndex]
-
-                let updatedRequest = Request(
-                    id: existingRequest.id,
-                    category: existingRequest.category,
-                    title: existingRequest.title,
-                    detailDescription: existingRequest.detailDescription,
-                    brand: existingRequest.brand,
-                    model: existingRequest.model,
-                    status: .accepted
-                )
-
-                MockDataProvider.shared.customerRequests[customerIndex] = updatedRequest
-            }
-
-            if let openIndex = MockDataProvider.shared.openRequests.firstIndex(where: { $0.id == offer.requestId }) {
-                MockDataProvider.shared.openRequests.remove(at: openIndex)
-            }
-
-            self.loadOffers()
-
-            let existingChatRoom = MockDataProvider.shared.customerChatRooms.first {
-                $0.requestId == offer.requestId && $0.participantName == offer.technicianName
-            }
-
-            let chatRoomId: String
-
-            if let existingChatRoom = existingChatRoom {
-                chatRoomId = existingChatRoom.id
-            } else {
-                let newChatRoom = ChatRoom(
-                    id: UUID().uuidString,
-                    requestId: offer.requestId,
-                    participantName: offer.technicianName,
-                    requestTitle: self.requestTitle,
-                    lastMessage: "Chat started"
-                )
-
-                MockDataProvider.shared.customerChatRooms.append(newChatRoom)
-                MockDataProvider.shared.technicianChatRooms.append(newChatRoom)
-                chatRoomId = newChatRoom.id
-            }
-
-            let chatDetailVC = ChatDetailViewController(
-                chatRoomId: chatRoomId,
-                participantName: offer.technicianName,
-                requestTitle: self.requestTitle,
-                currentUserRole: .customer
-            )
-            self.navigationController?.pushViewController(chatDetailVC, animated: true)
-        })
-
-        present(alert, animated: true)
-        tableView.deselectRow(at: indexPath, animated: true)
-    }
+//    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+//        let offer = offers[indexPath.row]
+//
+//        let alert = UIAlertController(
+//            title: "Accept Offer?",
+//            message: """
+//            Technician: \(offer.technicianName)
+//            Price: ₺\(offer.price)
+//            Estimated Time: \(offer.estimatedTime)
+//            """,
+//            preferredStyle: .alert
+//        )
+//
+//        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+//
+//        alert.addAction(UIAlertAction(title: "Accept", style: .default) { _ in
+//            if let customerIndex = MockDataProvider.shared.customerRequests.firstIndex(where: { $0.id == offer.requestId }) {
+//                let existingRequest = MockDataProvider.shared.customerRequests[customerIndex]
+//
+//                let updatedRequest = Request(
+//                    id: existingRequest.id,
+//                    category: existingRequest.category,
+//                    title: existingRequest.title,
+//                    detailDescription: existingRequest.detailDescription,
+//                    brand: existingRequest.brand,
+//                    model: existingRequest.model,
+//                    status: .accepted
+//                )
+//
+//                MockDataProvider.shared.customerRequests[customerIndex] = updatedRequest
+//            }
+//
+//            if let openIndex = MockDataProvider.shared.openRequests.firstIndex(where: { $0.id == offer.requestId }) {
+//                MockDataProvider.shared.openRequests.remove(at: openIndex)
+//            }
+//
+//            self.loadOffers()
+//
+//            let existingChatRoom = MockDataProvider.shared.customerChatRooms.first {
+//                $0.requestId == offer.requestId && $0.participantName == offer.technicianName
+//            }
+//
+//            let chatRoomId: String
+//
+//            if let existingChatRoom = existingChatRoom {
+//                chatRoomId = existingChatRoom.id
+//            } else {
+//                let newChatRoom = ChatRoom(
+//                    id: UUID().uuidString,
+//                    requestId: offer.requestId,
+//                    participantName: offer.technicianName,
+//                    requestTitle: self.requestTitle,
+//                    lastMessage: "Chat started"
+//                )
+//
+//                MockDataProvider.shared.customerChatRooms.append(newChatRoom)
+//                MockDataProvider.shared.technicianChatRooms.append(newChatRoom)
+//                chatRoomId = newChatRoom.id
+//            }
+//
+//            let chatDetailVC = ChatDetailViewController(
+//                chatRoomId: chatRoomId,
+//                participantName: offer.technicianName,
+//                requestTitle: self.requestTitle,
+//                currentUserRole: .customer
+//            )
+//            self.navigationController?.pushViewController(chatDetailVC, animated: true)
+//        })
+//
+//        present(alert, animated: true)
+//        tableView.deselectRow(at: indexPath, animated: true)
+//    }
 }

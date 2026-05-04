@@ -198,10 +198,10 @@ final class OfferCreateViewController: UIViewController {
                 price: price,
                 estimatedTime: estimatedTime
             )
-            MockDataProvider.shared.addOffer(createdOffer)
-            if let index = MockDataProvider.shared.openRequests.firstIndex(where: { $0.id == self.requestId }) {
-                MockDataProvider.shared.openRequests.remove(at: index)
-            }
+//            MockDataProvider.shared.addOffer(createdOffer)
+//            if let index = MockDataProvider.shared.openRequests.firstIndex(where: { $0.id == self.requestId }) {
+//                MockDataProvider.shared.openRequests.remove(at: index)
+//            }
 
             let alert = UIAlertController(
                 title: "Offer Submitted",

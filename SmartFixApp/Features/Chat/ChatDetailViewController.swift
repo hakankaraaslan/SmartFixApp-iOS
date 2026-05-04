@@ -55,7 +55,7 @@ final class ChatDetailViewController: UIViewController {
         setupUI()
         setupTableView()
         setupActions()
-        loadMessages()
+//        loadMessages()
     }
 
     private func setupUI() {
@@ -106,34 +106,34 @@ final class ChatDetailViewController: UIViewController {
     }
 
     private func setupActions() {
-        sendButton.addTarget(self, action: #selector(sendButtonTapped), for: .touchUpInside)
+//        sendButton.addTarget(self, action: #selector(sendButtonTapped), for: .touchUpInside)
     }
 
-    private func loadMessages() {
-        messages = MockDataProvider.shared.messages(for: chatRoomId)
-        tableView.reloadData()
-
-        if !messages.isEmpty {
-            let lastIndex = IndexPath(row: messages.count - 1, section: 0)
-            tableView.scrollToRow(at: lastIndex, at: .bottom, animated: false)
-        }
-    }
-
-    @objc private func sendButtonTapped() {
-        let text = (messageTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard !text.isEmpty else { return }
-
-        let newMessage = Message(
-            id: UUID().uuidString,
-            text: text,
-            senderRole: currentUserRole
-        )
-
-        MockDataProvider.shared.addMessage(newMessage, for: chatRoomId)
-        messageTextField.text = nil
-        loadMessages()
-    }
+//    private func loadMessages() {
+//        messages = MockDataProvider.shared.messages(for: chatRoomId)
+//        tableView.reloadData()
+//
+//        if !messages.isEmpty {
+//            let lastIndex = IndexPath(row: messages.count - 1, section: 0)
+//            tableView.scrollToRow(at: lastIndex, at: .bottom, animated: false)
+//        }
+//    }
+//
+//    @objc private func sendButtonTapped() {
+//        let text = (messageTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+//
+//        guard !text.isEmpty else { return }
+//
+//        let newMessage = Message(
+//            id: UUID().uuidString,
+//            text: text,
+//            senderRole: currentUserRole
+//        )
+//
+//        MockDataProvider.shared.addMessage(newMessage, for: chatRoomId)
+//        messageTextField.text = nil
+//        loadMessages()
+//    }
 }
 
 extension ChatDetailViewController: UITableViewDataSource {

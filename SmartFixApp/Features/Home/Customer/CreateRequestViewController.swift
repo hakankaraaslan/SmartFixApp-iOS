@@ -63,13 +63,31 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
         return textView
     }()
 
+    
+    private let deviceLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Device"
+        label.font = .systemFont(ofSize: 16, weight: .semibold)
+        return label
+    }()
+    
+    private let deviceTextField: UITextField = {
+        let textField = UITextField()
+        textField.placeholder = "Device (e.g. Fridge)"
+        textField.borderStyle = .roundedRect
+        textField.autocapitalizationType = .words
+        textField.autocorrectionType = .no
+        return textField
+    }()
+    
+    
     private let brandLabel: UILabel = {
         let label = UILabel()
         label.text = "Brand"
         label.font = .systemFont(ofSize: 16, weight: .semibold)
         return label
     }()
-
+    
     private let brandTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Brand (e.g. Samsung)"
@@ -149,6 +167,8 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
             categorySegmentedControl,
             descriptionLabel,
             descriptionTextView,
+            deviceLabel,
+            deviceTextField,
             brandLabel,
             brandTextField,
             modelLabel,
@@ -211,6 +231,7 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
             stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24),
 
             descriptionTextView.heightAnchor.constraint(equalToConstant: 140),
+            deviceTextField.heightAnchor.constraint(equalToConstant: 44),
             brandTextField.heightAnchor.constraint(equalToConstant: 44),
             modelTextField.heightAnchor.constraint(equalToConstant: 44),
             selectedImageView.heightAnchor.constraint(equalToConstant: 180),
@@ -241,9 +262,17 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
 
     private func handleSubmit() {
         let descriptionText = descriptionTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let deviceText = deviceTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let brandText = brandTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let modelText = modelTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         guard !descriptionText.isEmpty else {
             showAlert(title: "Missing Description", message: "Please describe the problem.")
+            return
+        }
+
+        guard !deviceText.isEmpty else {
+            showAlert(title: "Missing Device", message: "Please enter the device name.")
             return
         }
 
@@ -252,45 +281,78 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
             return
         }
 
+        guard let uid = AuthService.shared.currentUserId else {
+            showAlert(title: "Auth Error", message: "User session not found.")
+            return
+        }
+
         setLoading(true)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
-            guard let self = self else { return }
+        FirestoreService.shared.fetchUser(uid: uid) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
 
-            self.setLoading(false)
+                switch result {
+                case .success(let user):
 
-            let category = self.selectedCategoryTitle()
-            let brandText = self.brandTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let modelText = self.modelTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let brand = brandText.isEmpty ? nil : brandText
-            let model = modelText.isEmpty ? nil : modelText
+                    guard let city = user.address?.city, !city.isEmpty else {
+                        self.setLoading(false)
+                        self.showAlert(title: "Address Error", message: "User city not found.")
+                        return
+                    }
 
-            let generatedTitle = String(descriptionText.prefix(30))
+                    let category = self.selectedCategoryTitle()
+                    let requestId = UUID().uuidString
+                    let generatedTitle = "\(deviceText) - \(String(descriptionText.prefix(30)))"
 
-            let newRequest = Request(
-                id: UUID().uuidString,
-                category: category,
-                title: generatedTitle.isEmpty ? "New Repair Request" : generatedTitle,
-                detailDescription: descriptionText,
-                brand: brand,
-                model: model,
-                status: .open
-            )
+                    let request = RepairRequestModel(
+                        id: requestId,
+                        customerId: user.uid,
+                        customerName: user.fullName,
+                        category: category,
+                        deviceName: deviceText,
+                        title: generatedTitle,
+                        detailDescription: descriptionText,
+                        brand: brandText.isEmpty ? nil : brandText,
+                        model: modelText.isEmpty ? nil : modelText,
+                        city: city,
+                        state: user.address?.state,
+                        customerAddress: user.address,
+                        status: .open,
+                        acceptedOfferId: nil,
+                        acceptedTechnicianId: nil
+                    )
 
-            MockDataProvider.shared.customerRequests.append(newRequest)
-            MockDataProvider.shared.openRequests.append(newRequest)
+                    RequestService.shared.createRequest(request: request) { [weak self] createResult in
+                        DispatchQueue.main.async {
+                            guard let self else { return }
+                            self.setLoading(false)
 
-            let alert = UIAlertController(
-                title: "Request Created",
-                message: "Category: \(category)\nYour repair request has been created successfully and is now visible to technicians.",
-                preferredStyle: .alert
-            )
+                            switch createResult {
+                            case .success:
+                                let alert = UIAlertController(
+                                    title: "Request Created",
+                                    message: "Your repair request has been created successfully.",
+                                    preferredStyle: .alert
+                                )
 
-            alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-                self.navigationController?.popViewController(animated: true)
-            })
+                                alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+                                    self.navigationController?.popViewController(animated: true)
+                                })
 
-            self.present(alert, animated: true)
+                                self.present(alert, animated: true)
+
+                            case .failure(let error):
+                                self.showAlert(title: "Create Failed", message: error.localizedDescription)
+                            }
+                        }
+                    }
+
+                case .failure(let error):
+                    self.setLoading(false)
+                    self.showAlert(title: "User Error", message: error.localizedDescription)
+                }
+            }
         }
     }
 

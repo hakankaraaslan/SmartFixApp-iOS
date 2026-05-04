@@ -17,7 +17,7 @@ final class MyRequestsViewController: UIViewController {
 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
-    private var requests: [Request] = []
+    private var requests: [RepairRequestModel] = []
 
     // MARK: - Lifecycle
 
@@ -62,7 +62,7 @@ final class MyRequestsViewController: UIViewController {
 //    }
     
     private func loadRequests() {
-        requests = MockDataProvider.shared.customerRequests.filter { $0.status == .open }
+//        requests = MockDataProvider.shared.customerRequests.filter { $0.status == .open }
         tableView.reloadData()
     }
     
