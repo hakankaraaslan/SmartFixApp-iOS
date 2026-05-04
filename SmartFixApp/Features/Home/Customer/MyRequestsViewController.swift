@@ -8,24 +8,26 @@
 import UIKit
 
 final class MyRequestsViewController: UIViewController {
-
-    // MARK: - Dummy Model
-
-    
-
     // MARK: - Properties
-
+    private var allRequests: [RepairRequestModel] = []
+    private var filteredRequests: [RepairRequestModel] = []
+    private var selectedStatus: RequestStatus = .open
+    
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
-
-    private var requests: [RepairRequestModel] = []
-
+    
+    private let statusSegmentedControl: UISegmentedControl = {
+        let control = UISegmentedControl(items: ["Open", "Accepted", "Completed", "Cancelled"])
+        control.selectedSegmentIndex = 0
+        return control
+    }()
+    
     // MARK: - Lifecycle
-
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupTableView()
         loadRequests()
+        setupActions()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -34,16 +36,23 @@ final class MyRequestsViewController: UIViewController {
     }
 
     // MARK: - Setup
-
     private func setupUI() {
         title = "My Requests"
         view.backgroundColor = .systemBackground
 
+        view.addSubview(statusSegmentedControl)
         view.addSubview(tableView)
+
+        statusSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
         tableView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            statusSegmentedControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+            statusSegmentedControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            statusSegmentedControl.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            statusSegmentedControl.heightAnchor.constraint(equalToConstant: 36),
+
+            tableView.topAnchor.constraint(equalTo: statusSegmentedControl.bottomAnchor, constant: 12),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
@@ -56,16 +65,55 @@ final class MyRequestsViewController: UIViewController {
         tableView.delegate = self
     }
 
-//    private func loadRequests() {
-//        requests = MockDataProvider.shared.customerRequests
-//        tableView.reloadData()
-//    }
-    
-    private func loadRequests() {
-//        requests = MockDataProvider.shared.customerRequests.filter { $0.status == .open }
-        tableView.reloadData()
+    private func setupActions() {
+        statusSegmentedControl.addTarget(
+            self,
+            action: #selector(statusSegmentChanged),
+            for: .valueChanged
+        )
     }
     
+    private func loadRequests() {
+        guard let uid = SessionManager.shared.uid else { return }
+
+        RequestService.shared.fetchRequestsForCustomer(customerId: uid) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                switch result {
+                case .success(let requests):
+                    self.allRequests = requests
+                    self.applyFilter()
+
+                case .failure(let error):
+                    print("Fetch requests error:", error.localizedDescription)
+                }
+            }
+        }
+    }
+    
+    @objc private func statusSegmentChanged() {
+        switch statusSegmentedControl.selectedSegmentIndex {
+        case 0: selectedStatus = .open
+        case 1: selectedStatus = .offerAccepted
+        case 2: selectedStatus = .completed
+        case 3: selectedStatus = .cancelled
+        default: selectedStatus = .open
+        }
+
+        applyFilter()
+    }
+    
+    private func applyFilter() {
+        filteredRequests = allRequests.filter { $0.status == selectedStatus }
+        tableView.reloadData()
+
+        if filteredRequests.isEmpty {
+            tableView.setEmptyMessage("No \(selectedStatus.rawValue) requests.")
+        } else {
+            tableView.restore()
+        }
+    }
 }
 
 // MARK: - UITableViewDataSource
@@ -73,12 +121,12 @@ final class MyRequestsViewController: UIViewController {
 extension MyRequestsViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        requests.count
+        filteredRequests.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-        let request = requests[indexPath.row]
+        let request = filteredRequests[indexPath.row]
         let cell = tableView.dequeueReusableCell(withIdentifier: "RequestCell", for: indexPath)
 
         var content = cell.defaultContentConfiguration()
@@ -98,7 +146,7 @@ extension MyRequestsViewController: UITableViewDataSource {
 extension MyRequestsViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let request = requests[indexPath.row]
+        let request = filteredRequests[indexPath.row]
 
         let detailRequest = RequestDetailViewController.RequestDetail(
             id: request.id,
@@ -112,5 +160,37 @@ extension MyRequestsViewController: UITableViewDelegate {
         navigationController?.pushViewController(detailVC, animated: true)
 
         tableView.deselectRow(at: indexPath, animated: true)
+    }
+}
+
+extension UITableView {
+
+    func setEmptyMessage(_ message: String) {
+        let messageLabel = UILabel()
+        messageLabel.text = message
+        messageLabel.textColor = .secondaryLabel
+        messageLabel.numberOfLines = 0
+        messageLabel.textAlignment = .center
+        messageLabel.font = .systemFont(ofSize: 16)
+
+        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let container = UIView()
+        container.addSubview(messageLabel)
+
+        NSLayoutConstraint.activate([
+            messageLabel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            messageLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            messageLabel.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor, constant: 20),
+            messageLabel.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -20)
+        ])
+
+        self.backgroundView = container
+        self.separatorStyle = .none
+    }
+
+    func restore() {
+        self.backgroundView = nil
+        self.separatorStyle = .singleLine
     }
 }

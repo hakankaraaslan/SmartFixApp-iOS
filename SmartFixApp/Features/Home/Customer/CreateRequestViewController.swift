@@ -316,11 +316,13 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
                         brand: brandText.isEmpty ? nil : brandText,
                         model: modelText.isEmpty ? nil : modelText,
                         city: city,
+                        cityKey: city.normalizedCityKey,
                         state: user.address?.state,
                         customerAddress: user.address,
                         status: .open,
                         acceptedOfferId: nil,
-                        acceptedTechnicianId: nil
+                        acceptedTechnicianId: nil,
+                        createdAt: Date().timeIntervalSince1970
                     )
 
                     RequestService.shared.createRequest(request: request) { [weak self] createResult in

@@ -20,3 +20,17 @@ extension Encodable {
         return dictionary
     }
 }
+
+extension Decodable {
+
+    static func fromDictionary(_ dictionary: [String: Any]) -> Self? {
+        guard JSONSerialization.isValidJSONObject(dictionary),
+              let data = try? JSONSerialization.data(withJSONObject: dictionary),
+              let object = try? JSONDecoder().decode(Self.self, from: data)
+        else {
+            return nil
+        }
+
+        return object
+    }
+}
