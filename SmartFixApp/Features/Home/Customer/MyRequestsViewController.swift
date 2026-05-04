@@ -147,16 +147,7 @@ extension MyRequestsViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let request = filteredRequests[indexPath.row]
-
-        let detailRequest = RequestDetailViewController.RequestDetail(
-            id: request.id,
-            category: request.category,
-            problemTitle: request.title,
-            description: request.detailDescription,
-            status: request.status.rawValue
-        )
-
-        let detailVC = RequestDetailViewController(request: detailRequest)
+        let detailVC = RequestDetailsViewController(requestId: request.id)
         navigationController?.pushViewController(detailVC, animated: true)
 
         tableView.deselectRow(at: indexPath, animated: true)

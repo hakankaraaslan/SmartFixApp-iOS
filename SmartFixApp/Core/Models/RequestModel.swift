@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct RepairRequestModel: Codable {
+struct RepairRequestModel: Codable, Sendable {
     let id: String
     let customerId: String
     let customerName: String
@@ -31,18 +31,10 @@ struct RepairRequestModel: Codable {
     let createdAt: TimeInterval
 }
 
-enum RequestStatus: String, Codable {
-    case open
-    case offerAccepted
+enum RequestStatus: String, Codable, Sendable {
+    case open          // hiç teklif yok
+    case pending       // teklif geldi, customer karar bekliyor
+    case offerAccepted // bir teklif kabul edildi
     case completed
     case cancelled
-
-}
-
-struct Offer {
-    let id: String
-    let requestId: String
-    let technicianName: String
-    let price: String
-    let estimatedTime: String
 }

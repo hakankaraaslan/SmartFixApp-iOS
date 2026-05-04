@@ -9,25 +9,12 @@ import UIKit
 
 final class OffersForRequestViewController: UIViewController {
 
-    // MARK: - Properties
-
     private let requestId: String
     private let requestTitle: String
 
-    private let priceRangeLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 16, weight: .semibold)
-        label.textColor = .systemGreen
-        label.numberOfLines = 0
-        label.textAlignment = .center
-        return label
-    }()
+    private var offers: [OfferModel] = []
 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
-
-    private var offers: [Offer] = []
-
-    // MARK: - Init
 
     init(requestId: String, requestTitle: String) {
         self.requestId = requestId
@@ -39,38 +26,27 @@ final class OffersForRequestViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: - Lifecycle
-
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupTableView()
         loadOffers()
     }
-    
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         loadOffers()
     }
 
-    // MARK: - Setup
-
     private func setupUI() {
         title = "Offers"
         view.backgroundColor = .systemBackground
-
-        view.addSubview(priceRangeLabel)
-        priceRangeLabel.translatesAutoresizingMaskIntoConstraints = false
 
         view.addSubview(tableView)
         tableView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            priceRangeLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
-            priceRangeLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            priceRangeLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-
-            tableView.topAnchor.constraint(equalTo: priceRangeLabel.bottomAnchor, constant: 12),
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
@@ -83,51 +59,48 @@ final class OffersForRequestViewController: UIViewController {
         tableView.delegate = self
     }
 
-//    private func loadOffers() {
-//        offers = MockDataProvider.shared.offers(for: requestId)
-//        tableView.reloadData()
-//    }
-    
     private func loadOffers() {
-//        if let request = MockDataProvider.shared.customerRequests.first(where: { $0.id == requestId }),
-//           request.status == .open {
-//            let priceRange = PriceEstimator.estimate(
-//                category: request.category,
-//                brand: request.brand,
-//                model: request.model,
-//                description: request.detailDescription
-//            )
-//            priceRangeLabel.text = "Estimated Price Range: ₺\(priceRange.min) - ₺\(priceRange.max)"
-//            offers = MockDataProvider.shared.offers(for: requestId)
-//        } else {
-//            priceRangeLabel.text = ""
-//            offers = []
-//        }
-//
-//        tableView.reloadData()
+        OfferService.shared.fetchOffersForRequest(requestId: requestId) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                switch result {
+                case .success(let offers):
+                    self.offers = offers
+                    self.tableView.reloadData()
+
+                    if offers.isEmpty {
+                        self.tableView.setEmptyMessage("No offers yet.")
+                    } else {
+                        self.tableView.restore()
+                    }
+
+                case .failure(let error):
+                    self.offers = []
+                    self.tableView.reloadData()
+                    self.tableView.setEmptyMessage("Could not load offers.")
+                    print("Fetch offers for request error:", error.localizedDescription)
+                }
+            }
+        }
     }
 }
 
-// MARK: - UITableViewDataSource
 
+// MARK: - UITableViewDataSource
 extension OffersForRequestViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         offers.count
     }
 
-    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        "Offers for: \(requestTitle)"
-    }
-
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-
         let offer = offers[indexPath.row]
         let cell = tableView.dequeueReusableCell(withIdentifier: "OfferCell", for: indexPath)
 
         var content = cell.defaultContentConfiguration()
-        content.text = offer.technicianName
-        content.secondaryText = "Price: ₺\(offer.price) • Estimated Time: \(offer.estimatedTime)"
+        content.text = "\(offer.technicianName) - ₺\(offer.price)"
+        content.secondaryText = "Estimated Time: \(offer.estimatedTime) • Status: \(offer.status.rawValue)"
         content.secondaryTextProperties.color = .secondaryLabel
 
         cell.contentConfiguration = content
@@ -136,11 +109,18 @@ extension OffersForRequestViewController: UITableViewDataSource {
         return cell
     }
 }
-
 // MARK: - UITableViewDelegate
-
 extension OffersForRequestViewController: UITableViewDelegate {
 
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let offer = offers[indexPath.row]
+        print("Selected offer:", offer.id)
+        tableView.deselectRow(at: indexPath, animated: true)
+    }
+}
+
+//extension OffersForRequestViewController: UITableViewDelegate {
+//
 //    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 //        let offer = offers[indexPath.row]
 //
@@ -213,4 +193,4 @@ extension OffersForRequestViewController: UITableViewDelegate {
 //        present(alert, animated: true)
 //        tableView.deselectRow(at: indexPath, animated: true)
 //    }
-}
+//}

@@ -29,12 +29,6 @@ final class LoginViewController: UIViewController {
         return label
     }()
 
-    private let roleSegmentedControl: UISegmentedControl = {
-        let control = UISegmentedControl(items: ["Customer", "Technician"])
-        control.selectedSegmentIndex = 0
-        return control
-    }()
-
     private let emailTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Email"
@@ -85,7 +79,6 @@ final class LoginViewController: UIViewController {
         let stack = UIStackView(arrangedSubviews: [
             titleLabel,
             subtitleLabel,
-            roleSegmentedControl,
             emailTextField,
             passwordTextField,
             loginButton,
@@ -224,7 +217,6 @@ final class LoginViewController: UIViewController {
         registerButton.isEnabled = !isLoading
         emailTextField.isEnabled = !isLoading
         passwordTextField.isEnabled = !isLoading
-        roleSegmentedControl.isEnabled = !isLoading
     }
 
     private func showAlert(title: String, message: String) {

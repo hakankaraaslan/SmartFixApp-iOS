@@ -10,12 +10,20 @@ import UIKit
 final class OfferCreateViewController: UIViewController {
 
     private let requestId: String
-    private let requestTitle: String
-    private let category: String
-    private let descriptionText: String
-    private let brand: String?
-    private let model: String?
+    private var request: RepairRequestModel?
+    private var currentTechnician: UserModel?
+    
+    // MARK: Init
+    init(requestId: String) {
+        self.requestId = requestId
+        super.init(nibName: nil, bundle: nil)
+    }
 
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // MARK: SUBVIEWS
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 24, weight: .bold)
@@ -104,30 +112,15 @@ final class OfferCreateViewController: UIViewController {
         return stack
     }()
 
-    init(requestId: String, requestTitle: String, category: String, descriptionText: String, brand: String?, model: String?) {
-        self.requestId = requestId
-        self.requestTitle = requestTitle
-        self.category = category
-        self.descriptionText = descriptionText
-        self.brand = brand
-        self.model = model
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        configureData()
         setupActions()
+        fetchInitialData()
     }
     
-    
-
-
+    //MARK: Setup
     private func setupUI() {
         title = "Create Offer"
         view.backgroundColor = .systemBackground
@@ -145,10 +138,32 @@ final class OfferCreateViewController: UIViewController {
         ])
     }
 
-    private func configureData() {
-        titleLabel.text = requestTitle
-        categoryLabel.text = "Category: \(category)"
-        let deviceParts = [brand, model]
+    // MARK: Configure UI
+    private func fetchInitialData() {
+        setLoading(true)
+
+        RequestService.shared.fetchRequest(requestId: requestId) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.setLoading(false)
+
+                switch result {
+                case .success(let request):
+                    self.request = request
+                    self.configureData(with: request)
+
+                case .failure(let error):
+                    self.showAlert(title: "Error", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+    
+    private func configureData(with request: RepairRequestModel) {
+        titleLabel.text = request.title
+        categoryLabel.text = "Category: \(request.category)"
+
+        let deviceParts = [request.deviceName, request.brand, request.model]
             .compactMap { $0 }
             .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
@@ -157,23 +172,27 @@ final class OfferCreateViewController: UIViewController {
         } else {
             deviceLabel.text = "Device: \(deviceParts.joined(separator: " "))"
         }
+
         let priceRange = PriceEstimator.estimate(
-            category: category,
-            brand: brand,
-            model: model,
-            description: descriptionText
+            category: request.category,
+            brand: request.brand,
+            model: request.model,
+            description: request.detailDescription
         )
+
         estimatedPriceRangeLabel.text = "Estimated Price Range: ₺\(priceRange.min) - ₺\(priceRange.max)"
-        descriptionLabel.text = descriptionText
+        descriptionLabel.text = request.detailDescription
     }
 
+
+    // MARK: Create Offer
     private func setupActions() {
         submitOfferButton.addTarget(self, action: #selector(submitOfferButtonTapped), for: .touchUpInside)
     }
-
+    
     @objc private func submitOfferButtonTapped() {
-        let price = (priceTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let estimatedTime = (estimatedTimeTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let price = priceTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let estimatedTime = estimatedTimeTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         guard !price.isEmpty, !estimatedTime.isEmpty else {
             showAlert(title: "Missing Information", message: "Please enter price and estimated time.")
@@ -181,45 +200,69 @@ final class OfferCreateViewController: UIViewController {
         }
 
         guard Int(price) != nil else {
-            showAlert(title: "Invalid Price", message: "Please enter a numeric price.")
+            showAlert(title: "Invalid Price", message: "Please enter numeric value.")
+            return
+        }
+
+        guard let request else {
+            showAlert(title: "Error", message: "Request not found.")
+            return
+        }
+
+        guard let uid = AuthService.shared.currentUserId else {
+            showAlert(title: "Auth Error", message: "User not found.")
             return
         }
 
         setLoading(true)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
-            guard let self = self else { return }
-            self.setLoading(false)
+        FirestoreService.shared.fetchUser(uid: uid) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
 
-            let createdOffer = Offer(
-                id: UUID().uuidString,
-                requestId: self.requestId,
-                technicianName: "Current Technician",
-                price: price,
-                estimatedTime: estimatedTime
-            )
-//            MockDataProvider.shared.addOffer(createdOffer)
-//            if let index = MockDataProvider.shared.openRequests.firstIndex(where: { $0.id == self.requestId }) {
-//                MockDataProvider.shared.openRequests.remove(at: index)
-//            }
+                switch result {
+                case .success(let technician):
 
-            let alert = UIAlertController(
-                title: "Offer Submitted",
-                message: "Offer for request ID: \(createdOffer.requestId)\nPrice: ₺\(createdOffer.price)\nEstimated Time: \(createdOffer.estimatedTime)\nThis request has been removed from the open requests list.",
-                preferredStyle: .alert
-            )
+                    let offer = OfferModel(
+                        id: UUID().uuidString,
+                        requestId: request.id,
+                        customerId: request.customerId,
+                        technicianId: technician.uid,
+                        technicianName: technician.fullName,
+                        requestTitle: request.title,
+                        requestCategory: request.category,
+                        requestDeviceName: request.deviceName,
+                        requestCity: request.city,
+                        price: price,
+                        estimatedTime: estimatedTime,
+                        status: .pending,
+                        createdAt: Date().timeIntervalSince1970
+                    )
 
-            alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-                self.navigationController?.popToViewController(
-                    self.navigationController?.viewControllers.first(where: { $0 is OpenRequestsViewController }) ?? self,
-                    animated: true
-                )
-            })
+                    OfferService.shared.createOffer(offer: offer) { result in
+                        DispatchQueue.main.async {
+                            self.setLoading(false)
 
-            self.present(alert, animated: true)
+                            switch result {
+                            case .success:
+                                self.showAlert(title: "Success", message: "Offer submitted")
+
+                            case .failure(let error):
+                                self.showAlert(title: "Error", message: error.localizedDescription)
+                            }
+                        }
+                    }
+
+                case .failure(let error):
+                    self.setLoading(false)
+                    self.showAlert(title: "User Error", message: error.localizedDescription)
+                }
+            }
         }
     }
 
+    
+    // MARK: Funcs
     private func setLoading(_ isLoading: Bool) {
         if isLoading {
             activityIndicator.startAnimating()

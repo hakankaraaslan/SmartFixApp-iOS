@@ -1,28 +1,28 @@
 //
-//  RequestDetailViewController.swift
+//  RequestDetailsViewController.swift
 //  SmartFixApp
 //
-//  Created by Ahmet Hakan Karaaslan on 7.04.2026.
+//  Created by Oğuzhan Abuhanoğlu on 4.05.2026.
 //
 
 import UIKit
 
-final class RequestDetailViewController: UIViewController {
-
-    // MARK: - Model
-
-    struct RequestDetail {
-        let id: String
-        let category: String
-        let problemTitle: String
-        let description: String
-        let status: String
+class RequestDetailsViewController: UIViewController {
+    
+    // MARK: - Init
+    private let requestId: String
+    private var selectedRepairRequest: RepairRequestModel?
+    
+    init(requestId: String) {
+        self.requestId = requestId
+        super.init(nibName: nil, bundle: nil)
     }
-
-    // MARK: - Properties
-
-    private let request: RequestDetail
-
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    // MARK: SUBVIEWS
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 26, weight: .bold)
@@ -103,28 +103,15 @@ final class RequestDetailViewController: UIViewController {
         return stack
     }()
 
-    // MARK: - Init
-
-    init(request: RequestDetail) {
-        self.request = request
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
     // MARK: - Lifecycle
-
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        configureData()
         setupActions()
+        fetchRequestDetail()
     }
 
     // MARK: - Setup
-
     private func setupUI() {
         title = "Request Detail"
         view.backgroundColor = .systemBackground
@@ -139,25 +126,54 @@ final class RequestDetailViewController: UIViewController {
             offersButton.heightAnchor.constraint(equalToConstant: 52)
         ])
     }
+    
+    // MARK: DATA
+    private func fetchRequestDetail() {
+        RequestService.shared.fetchRequest(requestId: requestId) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
 
-    private func configureData() {
-        titleLabel.text = request.problemTitle
-        categoryValueLabel.text = request.category
-        statusValueLabel.text = request.status
-        descriptionValueLabel.text = request.description
+                switch result {
+                case .success(let fetchedRequest):
+                    self.selectedRepairRequest = fetchedRequest
+                    self.configureData(with: fetchedRequest)
+
+                case .failure(let error):
+                    self.showAlert(title: "Error", message: error.localizedDescription)
+                }
+            }
+        }
     }
+
+    private func configureData(with requestModel: RepairRequestModel) {
+        titleLabel.text = requestModel.title
+        categoryValueLabel.text = requestModel.category
+        statusValueLabel.text = requestModel.status.rawValue
+        descriptionValueLabel.text = requestModel.detailDescription
+    }
+
+
+    // MARK: - Actions
 
     private func setupActions() {
         offersButton.addTarget(self, action: #selector(offersButtonTapped), for: .touchUpInside)
     }
-
-    // MARK: - Actions
-
+    
     @objc private func offersButtonTapped() {
+        guard let selectedRepairRequest else { return }
+
         let offersVC = OffersForRequestViewController(
-            requestId: request.id,
-            requestTitle: request.problemTitle
+            requestId: selectedRepairRequest.id,
+            requestTitle: selectedRepairRequest.title
         )
+
         navigationController?.pushViewController(offersVC, animated: true)
+    }
+    
+    private func showAlert(title: String, message: String) {
+        // Kullanıcıya hata veya bilgilendirme mesajı göstermek için alert oluşturur.
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 }

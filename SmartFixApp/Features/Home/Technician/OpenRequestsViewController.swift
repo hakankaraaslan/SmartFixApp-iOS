@@ -9,14 +9,21 @@ import UIKit
 
 final class OpenRequestsViewController: UIViewController {
 
-    private var allRequests: [RepairRequestModel] = []
-    private var filteredRequests: [RepairRequestModel] = []
-    private var selectedStatus: RequestStatus = .open
+    private enum TechnicianRequestFilter {
+        case open
+        case pending
+        case accepted
+        case rejected
+    }
+    
+    private var openRequests: [RepairRequestModel] = []
+    private var offers: [OfferModel] = []
+    private var selectedFilter: TechnicianRequestFilter = .open
 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
     private let statusSegmentedControl: UISegmentedControl = {
-        let control = UISegmentedControl(items: ["Open", "Accepted", "Completed", "Cancelled"])
+        let control = UISegmentedControl(items: ["Open", "Pending", "Accepted", "Rejected"])
         control.selectedSegmentIndex = 0
         return control
     }()
@@ -26,12 +33,25 @@ final class OpenRequestsViewController: UIViewController {
         setupUI()
         setupTableView()
         setupActions()
-        loadRequests()
+        loadCurrentSegment()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        loadRequests()
+        loadCurrentSegment()
+    }
+
+    private func loadCurrentSegment() {
+        switch selectedFilter {
+        case .open:
+            loadOpenRequests()
+        case .pending:
+            loadOffers(status: .pending)
+        case .accepted:
+            loadOffers(status: .accepted)
+        case .rejected:
+            loadOffers(status: .rejected)
+        }
     }
 
     private func setupUI() {
@@ -71,7 +91,7 @@ final class OpenRequestsViewController: UIViewController {
         )
     }
 
-    private func loadRequests() {
+    private func loadOpenRequests() {
         guard let uid = AuthService.shared.currentUserId else {
             tableView.setEmptyMessage("User session not found.")
             return
@@ -84,8 +104,8 @@ final class OpenRequestsViewController: UIViewController {
                 switch userResult {
                 case .success(let user):
                     guard let city = user.address?.city, !city.isEmpty else {
-                        self.allRequests = []
-                        self.applyFilter()
+                        self.openRequests = []
+                        self.tableView.reloadData()
                         self.tableView.setEmptyMessage("Technician city not found.")
                         return
                     }
@@ -98,12 +118,39 @@ final class OpenRequestsViewController: UIViewController {
 
                             switch requestResult {
                             case .success(let requests):
-                                self.allRequests = requests
-                                self.applyFilter()
+                                OfferService.shared.fetchAllOffersForTechnician(technicianId: uid) { [weak self] offerResult in
+                                    DispatchQueue.main.async {
+                                        guard let self else { return }
+
+                                        switch offerResult {
+                                        case .success(let myOffers):
+                                            let offeredRequestIds = Set(myOffers.map { $0.requestId })
+
+                                            self.openRequests = requests
+                                                .filter { $0.status == .open }
+                                                .filter { !offeredRequestIds.contains($0.id) }
+
+                                            self.offers = []
+                                            self.tableView.reloadData()
+
+                                            if self.openRequests.isEmpty {
+                                                self.tableView.setEmptyMessage("No open requests in your city.")
+                                            } else {
+                                                self.tableView.restore()
+                                            }
+
+                                        case .failure(let error):
+                                            self.openRequests = []
+                                            self.tableView.reloadData()
+                                            self.tableView.setEmptyMessage("Could not load offers.")
+                                            print("Fetch technician offers error:", error.localizedDescription)
+                                        }
+                                    }
+                                }
 
                             case .failure(let error):
-                                self.allRequests = []
-                                self.applyFilter()
+                                self.openRequests = []
+                                self.tableView.reloadData()
                                 self.tableView.setEmptyMessage("Could not load requests.")
                                 print("Fetch technician requests error:", error.localizedDescription)
                             }
@@ -111,8 +158,8 @@ final class OpenRequestsViewController: UIViewController {
                     }
 
                 case .failure(let error):
-                    self.allRequests = []
-                    self.applyFilter()
+                    self.openRequests = []
+                    self.tableView.reloadData()
                     self.tableView.setEmptyMessage("Could not load technician profile.")
                     print("Fetch technician user error:", error.localizedDescription)
                 }
@@ -122,42 +169,94 @@ final class OpenRequestsViewController: UIViewController {
 
     @objc private func statusSegmentChanged() {
         switch statusSegmentedControl.selectedSegmentIndex {
-        case 0: selectedStatus = .open
-        case 1: selectedStatus = .offerAccepted
-        case 2: selectedStatus = .completed
-        case 3: selectedStatus = .cancelled
-        default: selectedStatus = .open
+        case 0:
+            selectedFilter = .open
+            loadOpenRequests()
+
+        case 1:
+            selectedFilter = .pending
+            loadOffers(status: .pending)
+
+        case 2:
+            selectedFilter = .accepted
+            loadOffers(status: .accepted)
+
+        case 3:
+            selectedFilter = .rejected
+            loadOffers(status: .rejected)
+
+        default:
+            selectedFilter = .open
+            loadOpenRequests()
+        }
+    }
+    
+    private func loadOffers(status: OfferStatus) {
+        guard let technicianId = AuthService.shared.currentUserId else {
+            tableView.setEmptyMessage("User session not found.")
+            return
         }
 
-        applyFilter()
-    }
+        OfferService.shared.fetchOffersForTechnician(
+            technicianId: technicianId,
+            status: status
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
 
-    private func applyFilter() {
-        filteredRequests = allRequests.filter { $0.status == selectedStatus }
-        tableView.reloadData()
+                switch result {
+                case .success(let offers):
+                    self.offers = offers
+                    self.openRequests = []
+                    self.tableView.reloadData()
 
-        if filteredRequests.isEmpty {
-            tableView.setEmptyMessage("No \(selectedStatus.rawValue) requests in your city.")
-        } else {
-            tableView.restore()
+                    if offers.isEmpty {
+                        self.tableView.setEmptyMessage("No \(status.rawValue) offers.")
+                    } else {
+                        self.tableView.restore()
+                    }
+
+                case .failure(let error):
+                    self.offers = []
+                    self.tableView.reloadData()
+                    self.tableView.setEmptyMessage("Could not load offers.")
+                    print("Fetch offers error:", error.localizedDescription)
+                }
+            }
         }
     }
+    
+   
 }
 
 extension OpenRequestsViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        filteredRequests.count
+        switch selectedFilter {
+        case .open:
+            return openRequests.count
+        case .pending, .accepted, .rejected:
+            return offers.count
+        }
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let request = filteredRequests[indexPath.row]
         let cell = tableView.dequeueReusableCell(withIdentifier: "OpenRequestCell", for: indexPath)
 
         var content = cell.defaultContentConfiguration()
-        content.text = request.title
-        content.secondaryText = "\(request.category) • \(request.deviceName) • \(request.status.rawValue)"
-        content.secondaryTextProperties.color = .secondaryLabel
 
+        switch selectedFilter {
+        case .open:
+            let request = openRequests[indexPath.row]
+            content.text = request.title
+            content.secondaryText = "\(request.category) • \(request.deviceName) • \(request.status.rawValue)"
+
+        case .pending, .accepted, .rejected:
+            let offer = offers[indexPath.row]
+            content.text = offer.requestTitle
+            content.secondaryText = "\(offer.requestCategory) • ₺\(offer.price) • \(offer.status.rawValue)"
+        }
+
+        content.secondaryTextProperties.color = .secondaryLabel
         cell.contentConfiguration = content
         cell.accessoryType = .disclosureIndicator
         return cell
@@ -166,18 +265,18 @@ extension OpenRequestsViewController: UITableViewDataSource {
 
 extension OpenRequestsViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let request = filteredRequests[indexPath.row]
+        switch selectedFilter {
+        case .open:
+            let request = openRequests[indexPath.row]
+            let vc = OfferCreateViewController(requestId: request.id)
+            navigationController?.pushViewController(vc, animated: true)
 
-        let offerVC = OfferCreateViewController(
-            requestId: request.id,
-            requestTitle: request.title,
-            category: request.category,
-            descriptionText: request.detailDescription,
-            brand: request.brand,
-            model: request.model
-        )
+        case .pending, .accepted, .rejected:
+            let offer = offers[indexPath.row]
+            let vc = OfferCreateViewController(requestId: offer.requestId)
+            navigationController?.pushViewController(vc, animated: true)
+        }
 
-        navigationController?.pushViewController(offerVC, animated: true)
         tableView.deselectRow(at: indexPath, animated: true)
     }
 }
