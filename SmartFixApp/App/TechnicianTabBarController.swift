@@ -23,6 +23,12 @@ final class TechnicianTabBarController: UITabBarController {
 
         let openRequestsVC = OpenRequestsViewController()
         openRequestsVC.title = "Open Requests"
+        openRequestsVC.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "History",
+            style: .plain,
+            target: self,
+            action: #selector(historyTapped)
+        )
         let openRequestsNav = UINavigationController(rootViewController: openRequestsVC)
         openRequestsNav.tabBarItem = UITabBarItem(title: "Requests", image: UIImage(systemName: "doc.text"), tag: 1)
 
@@ -77,5 +83,12 @@ final class TechnicianTabBarController: UITabBarController {
                 }
             }
         }
+    }
+    
+    @objc private func historyTapped() {
+        guard let nav = selectedViewController as? UINavigationController else { return }
+
+        let vc = TechnicianWorkHistoryViewController()
+        nav.pushViewController(vc, animated: true)
     }
 }

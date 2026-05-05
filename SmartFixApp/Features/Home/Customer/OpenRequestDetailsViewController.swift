@@ -7,7 +7,7 @@
 
 import UIKit
 
-class RequestDetailsViewController: UIViewController {
+class OpenRequestDetailsViewController: UIViewController {
     
     // MARK: - Init
     private let requestId: String

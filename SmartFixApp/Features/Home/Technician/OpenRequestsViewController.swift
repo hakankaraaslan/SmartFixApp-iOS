@@ -255,8 +255,9 @@ extension OpenRequestsViewController: UITableViewDataSource {
             let offer = offers[indexPath.row]
             content.text = offer.requestTitle
             content.secondaryText = "\(offer.requestCategory) • ₺\(offer.price) • \(offer.status.rawValue)"
-            cell.accessoryType = .none
+            cell.accessoryType = selectedFilter == .accepted ? .disclosureIndicator : .none
         }
+        
 
         content.secondaryTextProperties.color = .secondaryLabel
         cell.contentConfiguration = content
@@ -271,12 +272,19 @@ extension OpenRequestsViewController: UITableViewDelegate {
             tableView.deselectRow(at: indexPath, animated: true)
         }
 
-        guard selectedFilter == .open else {
+        switch selectedFilter {
+        case .open:
+            let request = openRequests[indexPath.row]
+            let vc = OfferCreateViewController(requestId: request.id)
+            navigationController?.pushViewController(vc, animated: true)
+
+        case .accepted:
+            let offer = offers[indexPath.row]
+            let vc = AcceptedRequestDetailViewController(requestId: offer.requestId)
+            navigationController?.pushViewController(vc, animated: true)
+
+        case .pending, .rejected:
             return
         }
-
-        let request = openRequests[indexPath.row]
-        let vc = OfferCreateViewController(requestId: request.id)
-        navigationController?.pushViewController(vc, animated: true)
     }
 }

@@ -135,14 +135,15 @@ extension MyRequestsViewController: UITableViewDataSource {
         content.secondaryTextProperties.color = .secondaryLabel
 
         cell.contentConfiguration = content
-        cell.accessoryType = selectedStatus == .open ? .disclosureIndicator : .none
+        cell.accessoryType = (request.status == .open || request.status == .offerAccepted)
+            ? .disclosureIndicator
+            : .none
 
         return cell
     }
 }
 
 // MARK: - UITableViewDelegate
-
 extension MyRequestsViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -150,13 +151,21 @@ extension MyRequestsViewController: UITableViewDelegate {
             tableView.deselectRow(at: indexPath, animated: true)
         }
 
-        guard selectedStatus == .open else {
-            return
-        }
-
         let request = filteredRequests[indexPath.row]
-        let detailVC = RequestDetailsViewController(requestId: request.id)
-        navigationController?.pushViewController(detailVC, animated: true)
+
+        switch request.status {
+        case .open:
+            let detailVC = OpenRequestDetailsViewController(requestId: request.id)
+            navigationController?.pushViewController(detailVC, animated: true)
+
+        case .offerAccepted:
+            let detailVC = AcceptedRequestDetailViewController(requestId: request.id)
+            navigationController?.pushViewController(detailVC, animated: true)
+
+        case .completed, .cancelled, .pending:
+            return
+        
+        }
     }
 }
 
