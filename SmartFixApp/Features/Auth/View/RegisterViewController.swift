@@ -190,14 +190,12 @@ final class RegisterViewController: UIViewController {
                 self.setLoading(false)
                 
                 switch result {
-                case .success(let uid):
+                case .success(let user):
                     let addAddressVC = AddAddressViewController(
-                        uid: uid,
-                        userRole: selectedRole
+                        uid: user.uid,
+                        userRole: user.role
                     )
-                    SessionManager.shared.uid = uid
-                    SessionManager.shared.role = selectedRole
-                    SessionManager.shared.isAddressCompleted = false
+
                     self.navigationController?.pushViewController(addAddressVC, animated: true)
                 case .failure(let error):
             

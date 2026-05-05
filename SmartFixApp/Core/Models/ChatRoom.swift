@@ -7,10 +7,17 @@
 
 import Foundation
 
-struct ChatRoom {
+struct ChatRoomModel: Codable, Sendable {
     let id: String
     let requestId: String
-    let participantName: String
     let requestTitle: String
+
+    let customerId: String
+    let customerName: String
+
+    let technicianId: String
+    let technicianName: String
+
     let lastMessage: String
+    let createdAt: TimeInterval
 }

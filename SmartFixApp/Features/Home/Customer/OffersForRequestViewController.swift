@@ -26,6 +26,7 @@ final class OffersForRequestViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    // MARK: Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -38,6 +39,8 @@ final class OffersForRequestViewController: UIViewController {
         loadOffers()
     }
 
+    
+    // MARK: Setup
     private func setupUI() {
         title = "Offers"
         view.backgroundColor = .systemBackground
@@ -59,6 +62,7 @@ final class OffersForRequestViewController: UIViewController {
         tableView.delegate = self
     }
 
+    // MARK: DATA
     private func loadOffers() {
         OfferService.shared.fetchOffersForRequest(requestId: requestId) { [weak self] result in
             DispatchQueue.main.async {
@@ -83,6 +87,126 @@ final class OffersForRequestViewController: UIViewController {
                 }
             }
         }
+    }
+    
+    // Accept offer flow
+    private func acceptOffer(_ offer: OfferModel) {
+        OfferService.shared.updateOfferStatus(
+            offerId: offer.id,
+            status: .accepted
+        ) { [weak self] offerResult in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                switch offerResult {
+                case .success:
+                    self.updateRequestAfterAccepting(offer)
+
+                case .failure(let error):
+                    self.showAlert(title: "Offer Error", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func updateRequestAfterAccepting(_ offer: OfferModel) {
+        RequestService.shared.acceptOfferForRequest(
+            requestId: offer.requestId,
+            offer: offer
+        ) { [weak self] requestResult in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                switch requestResult {
+                case .success:
+                    self.rejectOtherOffersAndCreateChat(offer)
+
+                case .failure(let error):
+                    self.showAlert(title: "Request Error", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func rejectOtherOffersAndCreateChat(_ offer: OfferModel) {
+        OfferService.shared.rejectOtherOffers(
+            requestId: offer.requestId,
+            acceptedOfferId: offer.id
+        ) { [weak self] rejectResult in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                switch rejectResult {
+                case .success:
+                    self.createChatRoom(for: offer)
+
+                case .failure(let error):
+                    self.showAlert(title: "Reject Offers Error", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+    
+    
+    private func createChatRoom(for offer: OfferModel) {
+        guard let customerId = AuthService.shared.currentUserId else {
+            showAlert(title: "Auth Error", message: "Customer not found.")
+            return
+        }
+
+        FirestoreService.shared.fetchUser(uid: customerId) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                switch result {
+                case .success(let customer):
+                    let chatRoomId = "\(offer.requestId)_\(offer.technicianId)"
+
+                    let chatRoom = ChatRoomModel(
+                        id: chatRoomId,
+                        requestId: offer.requestId,
+                        requestTitle: self.requestTitle,
+                        customerId: customer.uid,
+                        customerName: customer.fullName,
+                        technicianId: offer.technicianId,
+                        technicianName: offer.technicianName,
+                        lastMessage: "Chat started",
+                        createdAt: Date().timeIntervalSince1970
+                    )
+
+                    ChatService.shared.createChatRoom(chatRoom: chatRoom) { [weak self] chatResult in
+                        DispatchQueue.main.async {
+                            guard let self else { return }
+
+                            switch chatResult {
+                            case .success:
+                                let chatVC = ChatDetailViewController(
+                                    chatRoomId: chatRoom.id,
+                                    participantName: offer.technicianName,
+                                    requestTitle: self.requestTitle,
+                                    currentUserRole: .customer
+                                )
+
+                                self.navigationController?.pushViewController(chatVC, animated: true)
+
+                            case .failure(let error):
+                                self.showAlert(title: "Chat Error", message: error.localizedDescription)
+                            }
+                        }
+                    }
+
+                case .failure(let error):
+                    self.showAlert(title: "Customer Error", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+    
+    // MARK: Helpers
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 }
 
@@ -114,83 +238,24 @@ extension OffersForRequestViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let offer = offers[indexPath.row]
-        print("Selected offer:", offer.id)
+
+        let alert = UIAlertController(
+            title: "Accept Offer?",
+            message: """
+            Technician: \(offer.technicianName)
+            Price: ₺\(offer.price)
+            Estimated Time: \(offer.estimatedTime) \n If you accept the offer you can text with the technician on Smartfix to talk details.
+            """,
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        alert.addAction(UIAlertAction(title: "Accept", style: .default) { [weak self] _ in
+            self?.acceptOffer(offer)
+        })
+
+        present(alert, animated: true)
         tableView.deselectRow(at: indexPath, animated: true)
     }
 }
-
-//extension OffersForRequestViewController: UITableViewDelegate {
-//
-//    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        let offer = offers[indexPath.row]
-//
-//        let alert = UIAlertController(
-//            title: "Accept Offer?",
-//            message: """
-//            Technician: \(offer.technicianName)
-//            Price: ₺\(offer.price)
-//            Estimated Time: \(offer.estimatedTime)
-//            """,
-//            preferredStyle: .alert
-//        )
-//
-//        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-//
-//        alert.addAction(UIAlertAction(title: "Accept", style: .default) { _ in
-//            if let customerIndex = MockDataProvider.shared.customerRequests.firstIndex(where: { $0.id == offer.requestId }) {
-//                let existingRequest = MockDataProvider.shared.customerRequests[customerIndex]
-//
-//                let updatedRequest = Request(
-//                    id: existingRequest.id,
-//                    category: existingRequest.category,
-//                    title: existingRequest.title,
-//                    detailDescription: existingRequest.detailDescription,
-//                    brand: existingRequest.brand,
-//                    model: existingRequest.model,
-//                    status: .accepted
-//                )
-//
-//                MockDataProvider.shared.customerRequests[customerIndex] = updatedRequest
-//            }
-//
-//            if let openIndex = MockDataProvider.shared.openRequests.firstIndex(where: { $0.id == offer.requestId }) {
-//                MockDataProvider.shared.openRequests.remove(at: openIndex)
-//            }
-//
-//            self.loadOffers()
-//
-//            let existingChatRoom = MockDataProvider.shared.customerChatRooms.first {
-//                $0.requestId == offer.requestId && $0.participantName == offer.technicianName
-//            }
-//
-//            let chatRoomId: String
-//
-//            if let existingChatRoom = existingChatRoom {
-//                chatRoomId = existingChatRoom.id
-//            } else {
-//                let newChatRoom = ChatRoom(
-//                    id: UUID().uuidString,
-//                    requestId: offer.requestId,
-//                    participantName: offer.technicianName,
-//                    requestTitle: self.requestTitle,
-//                    lastMessage: "Chat started"
-//                )
-//
-//                MockDataProvider.shared.customerChatRooms.append(newChatRoom)
-//                MockDataProvider.shared.technicianChatRooms.append(newChatRoom)
-//                chatRoomId = newChatRoom.id
-//            }
-//
-//            let chatDetailVC = ChatDetailViewController(
-//                chatRoomId: chatRoomId,
-//                participantName: offer.technicianName,
-//                requestTitle: self.requestTitle,
-//                currentUserRole: .customer
-//            )
-//            self.navigationController?.pushViewController(chatDetailVC, animated: true)
-//        })
-//
-//        present(alert, animated: true)
-//        tableView.deselectRow(at: indexPath, animated: true)
-//    }
-//}

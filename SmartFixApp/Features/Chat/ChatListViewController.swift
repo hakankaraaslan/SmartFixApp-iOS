@@ -12,7 +12,7 @@ final class ChatListViewController: UIViewController {
     private let role: UserRole
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
-    private var chatRooms: [ChatRoom] = []
+    private var chatRooms: [ChatRoomModel] = []
 
     init(role: UserRole) {
         self.role = role
@@ -78,7 +78,7 @@ extension ChatListViewController: UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ChatCell", for: indexPath)
 
         var content = cell.defaultContentConfiguration()
-        content.text = room.participantName
+        content.text = room.customerName
         content.secondaryText = "\(room.requestTitle) • \(room.lastMessage)"
         content.secondaryTextProperties.color = .secondaryLabel
 
@@ -94,7 +94,7 @@ extension ChatListViewController: UITableViewDelegate {
 
         let chatDetailVC = ChatDetailViewController(
             chatRoomId: room.id,
-            participantName: room.participantName,
+            participantName: room.customerName,
             requestTitle: room.requestTitle,
             currentUserRole: role
         )

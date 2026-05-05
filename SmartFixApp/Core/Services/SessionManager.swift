@@ -13,6 +13,23 @@ final class SessionManager {
 
     private let defaults = UserDefaults.standard
 
+    var currentUser: UserModel? {
+        get {
+            guard let data = defaults.data(forKey: "currentUser"),
+                  let user = try? JSONDecoder().decode(UserModel.self, from: data)
+            else { return nil }
+            return user
+        }
+        set {
+            if let newValue,
+               let data = try? JSONEncoder().encode(newValue) {
+                defaults.set(data, forKey: "currentUser")
+            } else {
+                defaults.removeObject(forKey: "currentUser")
+            }
+        }
+    }
+    
     var uid: String? {
         get { defaults.string(forKey: "uid") }
         set { defaults.set(newValue, forKey: "uid") }

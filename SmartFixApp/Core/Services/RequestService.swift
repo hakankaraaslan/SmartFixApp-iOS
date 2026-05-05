@@ -15,6 +15,7 @@ final class RequestService {
     
     private let db = Firestore.firestore()
     
+    // MARK: Create request
     func createRequest(
         request: RepairRequestModel,
         completion: @escaping (Result<Void, Error>) -> Void
@@ -30,6 +31,7 @@ final class RequestService {
             }
     }
     
+    // MARK: Fetch customers own request
     func fetchRequestsForCustomer(
         customerId: String,
         completion: @escaping (Result<[RepairRequestModel], Error>) -> Void
@@ -51,6 +53,7 @@ final class RequestService {
             }
     }
     
+    // MARK: Fetch request for technicians filterin by city
     func fetchRequestsForTechnician(
         cityKey: String,
         completion: @escaping (Result<[RepairRequestModel], Error>) -> Void
@@ -72,6 +75,7 @@ final class RequestService {
             }
     }
     
+    // MARK: Fetch specific request
     func fetchRequest(
         requestId: String,
         completion: @escaping (Result<RepairRequestModel, Error>) -> Void
@@ -100,6 +104,8 @@ final class RequestService {
             }
     }
     
+    
+    // MARK: Update request status
     func updateRequestStatus(
         requestId: String,
         status: RequestStatus,
@@ -118,6 +124,7 @@ final class RequestService {
             }
     }
     
+    // MARK: Delete my request
     func deleteRequest(
         requestId: String,
         completion: @escaping (Result<Void, Error>) -> Void
@@ -141,6 +148,26 @@ final class RequestService {
         }
     }
     
+    // MARK: Accept Offer for request
+    func acceptOfferForRequest(
+        requestId: String,
+        offer: OfferModel,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        db.collection("requests")
+            .document(requestId)
+            .updateData([
+                "status": RequestStatus.offerAccepted.rawValue,
+                "acceptedOfferId": offer.id,
+                "acceptedTechnicianId": offer.technicianId
+            ]) { error in
+                if let error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+    }
 }
 
 

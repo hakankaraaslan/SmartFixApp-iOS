@@ -84,6 +84,16 @@ class RequestDetailsViewController: UIViewController {
         button.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
         return button
     }()
+    
+    private let deleteRequestButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Delete Request", for: .normal)
+        button.backgroundColor = .systemRed
+        button.setTitleColor(.white, for: .normal)
+        button.layer.cornerRadius = 12
+        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        return button
+    }()
 
     private lazy var stackView: UIStackView = {
         let stack = UIStackView(arrangedSubviews: [
@@ -94,10 +104,15 @@ class RequestDetailsViewController: UIViewController {
             statusValueLabel,
             descriptionTitleLabel,
             descriptionValueLabel,
-            offersButton
+            offersButton,
+            deleteRequestButton
         ])
         stack.axis = .vertical
-        stack.spacing = 14
+        stack.spacing = 23
+        stack.setCustomSpacing(6, after: categoryTitleLabel)
+        stack.setCustomSpacing(6, after: statusTitleLabel)
+        stack.setCustomSpacing(6, after: descriptionTitleLabel)
+        stack.setCustomSpacing(6, after: offersButton)
         stack.alignment = .fill
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
@@ -123,7 +138,8 @@ class RequestDetailsViewController: UIViewController {
             stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
             stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
 
-            offersButton.heightAnchor.constraint(equalToConstant: 52)
+            offersButton.heightAnchor.constraint(equalToConstant: 52),
+            deleteRequestButton.heightAnchor.constraint(equalToConstant: 52)
         ])
     }
     
@@ -157,6 +173,8 @@ class RequestDetailsViewController: UIViewController {
 
     private func setupActions() {
         offersButton.addTarget(self, action: #selector(offersButtonTapped), for: .touchUpInside)
+        
+        deleteRequestButton.addTarget(self, action: #selector(deleteRequest), for: .touchUpInside)
     }
     
     @objc private func offersButtonTapped() {
@@ -168,6 +186,48 @@ class RequestDetailsViewController: UIViewController {
         )
 
         navigationController?.pushViewController(offersVC, animated: true)
+    }
+    
+    @objc private func deleteRequest() {
+        guard let selectedRepairRequest else { return }
+
+        let alert = UIAlertController(
+            title: "Delete Request",
+            message: "This request and its offers will be deleted. Are you sure?",
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+            guard let self else { return }
+
+            RequestService.shared.deleteRequest(requestId: selectedRepairRequest.id) { [weak self] result in
+                DispatchQueue.main.async {
+                    guard let self else { return }
+
+                    switch result {
+                    case .success:
+                        let successAlert = UIAlertController(
+                            title: "Deleted",
+                            message: "Request deleted successfully.",
+                            preferredStyle: .alert
+                        )
+
+                        successAlert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+                            self.navigationController?.popViewController(animated: true)
+                        })
+
+                        self.present(successAlert, animated: true)
+
+                    case .failure(let error):
+                        self.showAlert(title: "Delete Failed", message: error.localizedDescription)
+                    }
+                }
+            }
+        })
+
+        present(alert, animated: true)
     }
     
     private func showAlert(title: String, message: String) {

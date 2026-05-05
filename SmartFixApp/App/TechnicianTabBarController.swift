@@ -12,18 +12,40 @@ final class TechnicianTabBarController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTabs()
-        setupNavigationBar()
+    }
+
+    private func setupTabs() {
+        let homeVC = TechnicianHomeViewController()
+        addLogoutButton(to: homeVC)
+        homeVC.title = "Home"
+        let homeNav = UINavigationController(rootViewController: homeVC)
+        homeNav.tabBarItem = UITabBarItem(title: "Home", image: UIImage(systemName: "house"), tag: 0)
+
+        let openRequestsVC = OpenRequestsViewController()
+        openRequestsVC.title = "Open Requests"
+        let openRequestsNav = UINavigationController(rootViewController: openRequestsVC)
+        openRequestsNav.tabBarItem = UITabBarItem(title: "Requests", image: UIImage(systemName: "doc.text"), tag: 1)
+
+        let chatsVC = ChatListViewController(role: .technician)
+        chatsVC.title = "Chats"
+        let chatsNav = UINavigationController(rootViewController: chatsVC)
+        chatsNav.tabBarItem = UITabBarItem(title: "Chats", image: UIImage(systemName: "message"), tag: 2)
+
+        viewControllers = [homeNav, openRequestsNav, chatsNav]
+        tabBar.tintColor = .systemBlue
+        navigationItem.largeTitleDisplayMode = .never
     }
     
-    private func setupNavigationBar() {
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
+    
+    private func addLogoutButton(to vc: UIViewController) {
+        vc.navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Logout",
             style: .plain,
             target: self,
             action: #selector(logoutTapped)
         )
     }
-
+    
     @objc private func logoutTapped() {
         AuthService.shared.logout { [weak self] result in
             DispatchQueue.main.async {
@@ -55,25 +77,5 @@ final class TechnicianTabBarController: UITabBarController {
                 }
             }
         }
-    }
-
-    private func setupTabs() {
-        let homeVC = TechnicianHomeViewController()
-        let homeNav = UINavigationController(rootViewController: homeVC)
-        homeNav.tabBarItem = UITabBarItem(title: "Home", image: UIImage(systemName: "house"), tag: 0)
-
-        let openRequestsVC = OpenRequestsViewController()
-        openRequestsVC.title = "Open Requests"
-        let openRequestsNav = UINavigationController(rootViewController: openRequestsVC)
-        openRequestsNav.tabBarItem = UITabBarItem(title: "Requests", image: UIImage(systemName: "doc.text"), tag: 1)
-
-        let chatsVC = ChatListViewController(role: .technician)
-        chatsVC.title = "Chats"
-        let chatsNav = UINavigationController(rootViewController: chatsVC)
-        chatsNav.tabBarItem = UITabBarItem(title: "Chats", image: UIImage(systemName: "message"), tag: 2)
-
-        viewControllers = [homeNav, openRequestsNav, chatsNav]
-        tabBar.tintColor = .systemBlue
-        navigationItem.largeTitleDisplayMode = .never
     }
 }

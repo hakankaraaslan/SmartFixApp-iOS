@@ -16,16 +16,18 @@ final class AuthService {
 
     private let db = Firestore.firestore()
 
+    // MARK: - Current User
     var currentUserId: String? {
         Auth.auth().currentUser?.uid
     }
 
+    // MARK: - REGISTER
     func register(
         email: String,
         password: String,
         fullName: String,
         role: UserRole,
-        completion: @escaping (Result<String, Error>) -> Void
+        completion: @escaping (Result<UserModel, Error>) -> Void
     ) {
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
             if let error {
@@ -33,7 +35,8 @@ final class AuthService {
                 return
             }
 
-            guard let uid = result?.user.uid else {
+            guard let self,
+                  let uid = result?.user.uid else {
                 completion(.failure(AuthServiceError.userNotFound))
                 return
             }
@@ -47,38 +50,41 @@ final class AuthService {
                 "createdAt": Timestamp(date: Date())
             ]
 
-            self?.db.collection("users")
+            self.db.collection("users")
                 .document(uid)
                 .setData(data) { error in
                     if let error {
                         completion(.failure(error))
                     } else {
-                        completion(.success(uid))
+                        self.cacheUserSession(uid: uid, completion: completion)
                     }
                 }
         }
     }
 
+    // MARK: - LOGIN
     func login(
         email: String,
         password: String,
-        completion: @escaping (Result<String, Error>) -> Void
+        completion: @escaping (Result<UserModel, Error>) -> Void
     ) {
-        Auth.auth().signIn(withEmail: email, password: password) { result, error in
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
             if let error {
                 completion(.failure(error))
                 return
             }
 
-            guard let uid = result?.user.uid else {
+            guard let self,
+                  let uid = result?.user.uid else {
                 completion(.failure(AuthServiceError.userNotFound))
                 return
             }
 
-            completion(.success(uid))
+            self.cacheUserSession(uid: uid, completion: completion)
         }
     }
 
+    // MARK: - LOGOUT
     func logout(completion: @escaping (Result<Void, Error>) -> Void) {
         do {
             try Auth.auth().signOut()
@@ -88,27 +94,27 @@ final class AuthService {
             completion(.failure(error))
         }
     }
-    
-    func fetchUserRole(
+
+    // MARK: - CACHE USER
+    private func cacheUserSession(
         uid: String,
-        completion: @escaping (Result<UserRole, Error>) -> Void
+        completion: @escaping (Result<UserModel, Error>) -> Void
     ) {
-        db.collection("users").document(uid).getDocument { snapshot, error in
-            if let error {
+        FirestoreService.shared.fetchUser(uid: uid) { result in
+            switch result {
+
+            case .success(let user):
+                // 🔥 LOCAL CACHE
+                SessionManager.shared.uid = user.uid
+                SessionManager.shared.role = user.role
+                SessionManager.shared.isAddressCompleted = user.isAddressCompleted
+                SessionManager.shared.currentUser = user
+
+                completion(.success(user))
+
+            case .failure(let error):
                 completion(.failure(error))
-                return
             }
-
-            guard
-                let data = snapshot?.data(),
-                let roleRawValue = data["role"] as? String,
-                let role = UserRole(rawValue: roleRawValue)
-            else {
-                completion(.failure(AuthServiceError.userNotFound))
-                return
-            }
-
-            completion(.success(role))
         }
     }
 }

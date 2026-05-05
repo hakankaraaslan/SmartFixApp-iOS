@@ -303,7 +303,7 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
 
                     let category = self.selectedCategoryTitle()
                     let requestId = UUID().uuidString
-                    let generatedTitle = "\(deviceText) - \(String(descriptionText.prefix(30)))"
+                    let generatedTitle = "\(deviceText) - \(brandText)"
 
                     let request = RepairRequestModel(
                         id: requestId,

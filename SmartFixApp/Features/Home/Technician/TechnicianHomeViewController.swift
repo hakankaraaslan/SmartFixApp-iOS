@@ -9,9 +9,10 @@ import UIKit
 
 final class TechnicianHomeViewController: UIViewController {
 
+    private let sessionManager = SessionManager.shared
+    
     private let welcomeLabel: UILabel = {
         let label = UILabel()
-        label.text = "Welcome, Technician"
         label.font = .systemFont(ofSize: 28, weight: .bold)
         label.textAlignment = .center
         label.numberOfLines = 0
@@ -55,6 +56,7 @@ final class TechnicianHomeViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         setupUI()
+        configureUser()
         setupActions()
     }
 
@@ -70,6 +72,12 @@ final class TechnicianHomeViewController: UIViewController {
         ])
     }
 
+    private func configureUser() {
+        let name = sessionManager.currentUser?.fullName ?? "User"
+        welcomeLabel.text = "Welcome, \(name)"
+
+    }
+    
     private func setupActions() {
         openRequestsButton.addTarget(self, action: #selector(openRequestsButtonTapped), for: .touchUpInside)
     }

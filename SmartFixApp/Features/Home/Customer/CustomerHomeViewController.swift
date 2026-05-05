@@ -8,8 +8,8 @@
 import UIKit
 
 final class CustomerHomeViewController: UIViewController {
-    // CustomerHomeViewController müşteri rolündeki kullanıcıların göreceği ana ekranı temsil eder.
-    // Bu ekran genellikle servis talebi oluşturma, geçmiş talepleri görüntüleme gibi işlemleri içerir.
+
+    private let sessionManager = SessionManager.shared
 
     private let welcomeLabel: UILabel = {
         let label = UILabel()
@@ -69,6 +69,7 @@ final class CustomerHomeViewController: UIViewController {
         view.backgroundColor = .systemBackground
         navigationItem.largeTitleDisplayMode = .never
         setupUI()
+        configureUser()
         setupActions()
     }
 
@@ -88,6 +89,12 @@ final class CustomerHomeViewController: UIViewController {
     private func setupActions() {
         createRequestButton.addTarget(self, action: #selector(createRequestButtonTapped), for: .touchUpInside)
         myRequestsButton.addTarget(self, action: #selector(myRequestsButtonTapped), for: .touchUpInside)
+    }
+    
+    private func configureUser() {
+        let name = sessionManager.currentUser?.fullName ?? "User"
+        welcomeLabel.text = "Welcome, \(name)"
+
     }
 
     @objc private func createRequestButtonTapped() {

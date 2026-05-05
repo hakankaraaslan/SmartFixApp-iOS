@@ -152,49 +152,28 @@ final class LoginViewController: UIViewController {
 
         setLoading(true)
 
-
         authService.login(email: email, password: password) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self else { return }
 
+                self.setLoading(false)
+
                 switch result {
-                case .success(let uid):
-                    FirestoreService.shared.fetchUser(uid: uid) { [weak self] userResult in
-                        DispatchQueue.main.async {
-                            guard let self else { return }
+                case .success(let user):
 
-                            self.setLoading(false)
-
-                            switch userResult {
-                            case .success(let user):
-                                
-                                SessionManager.shared.uid = user.uid
-                                SessionManager.shared.role = user.role
-                                SessionManager.shared.isAddressCompleted = user.isAddressCompleted
-                                
-                                if user.isAddressCompleted {
-                                    let homeVC = HomeRouter.makeHome(for: user.role)
-                                    self.view.window?.rootViewController = homeVC
-                                    self.view.window?.makeKeyAndVisible()
-                                } else {
-                                    let addAddressVC = AddAddressViewController(
-                                        uid: user.uid,
-                                        userRole: user.role
-                                    )
-                                    self.navigationController?.pushViewController(addAddressVC, animated: true)
-                                }
-
-                            case .failure(let error):
-                                self.showAlert(
-                                    title: "User Data Error",
-                                    message: error.localizedDescription
-                                )
-                            }
-                        }
+                    if user.isAddressCompleted {
+                        let homeVC = HomeRouter.makeHome(for: user.role)
+                        self.view.window?.rootViewController = homeVC
+                        self.view.window?.makeKeyAndVisible()
+                    } else {
+                        let addAddressVC = AddAddressViewController(
+                            uid: user.uid,
+                            userRole: user.role
+                        )
+                        self.navigationController?.pushViewController(addAddressVC, animated: true)
                     }
 
-                case .failure(let error):
-                    self.setLoading(false)
+                case .failure(_):
                     self.showAlert(
                         title: "Login Failed",
                         message: "Email or password is incorrect."
@@ -202,7 +181,6 @@ final class LoginViewController: UIViewController {
                 }
             }
         }
-        
     }
 
     // MARK: - Helpers
