@@ -249,34 +249,34 @@ extension OpenRequestsViewController: UITableViewDataSource {
             let request = openRequests[indexPath.row]
             content.text = request.title
             content.secondaryText = "\(request.category) • \(request.deviceName) • \(request.status.rawValue)"
+            cell.accessoryType = .disclosureIndicator
 
         case .pending, .accepted, .rejected:
             let offer = offers[indexPath.row]
             content.text = offer.requestTitle
             content.secondaryText = "\(offer.requestCategory) • ₺\(offer.price) • \(offer.status.rawValue)"
+            cell.accessoryType = .none
         }
 
         content.secondaryTextProperties.color = .secondaryLabel
         cell.contentConfiguration = content
-        cell.accessoryType = .disclosureIndicator
+    
         return cell
     }
 }
 
 extension OpenRequestsViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        switch selectedFilter {
-        case .open:
-            let request = openRequests[indexPath.row]
-            let vc = OfferCreateViewController(requestId: request.id)
-            navigationController?.pushViewController(vc, animated: true)
-
-        case .pending, .accepted, .rejected:
-            let offer = offers[indexPath.row]
-            let vc = OfferCreateViewController(requestId: offer.requestId)
-            navigationController?.pushViewController(vc, animated: true)
+        defer {
+            tableView.deselectRow(at: indexPath, animated: true)
         }
 
-        tableView.deselectRow(at: indexPath, animated: true)
+        guard selectedFilter == .open else {
+            return
+        }
+
+        let request = openRequests[indexPath.row]
+        let vc = OfferCreateViewController(requestId: request.id)
+        navigationController?.pushViewController(vc, animated: true)
     }
 }

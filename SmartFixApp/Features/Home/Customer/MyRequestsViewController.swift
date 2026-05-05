@@ -135,7 +135,7 @@ extension MyRequestsViewController: UITableViewDataSource {
         content.secondaryTextProperties.color = .secondaryLabel
 
         cell.contentConfiguration = content
-        cell.accessoryType = .disclosureIndicator
+        cell.accessoryType = selectedStatus == .open ? .disclosureIndicator : .none
 
         return cell
     }
@@ -146,11 +146,17 @@ extension MyRequestsViewController: UITableViewDataSource {
 extension MyRequestsViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        defer {
+            tableView.deselectRow(at: indexPath, animated: true)
+        }
+
+        guard selectedStatus == .open else {
+            return
+        }
+
         let request = filteredRequests[indexPath.row]
         let detailVC = RequestDetailsViewController(requestId: request.id)
         navigationController?.pushViewController(detailVC, animated: true)
-
-        tableView.deselectRow(at: indexPath, animated: true)
     }
 }
 
