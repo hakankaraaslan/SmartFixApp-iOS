@@ -202,6 +202,27 @@ final class OffersForRequestViewController: UIViewController {
         }
     }
     
+    
+    private func rejectOffer(_ offer: OfferModel) {
+        OfferService.shared.updateOfferStatus(
+            offerId: offer.id,
+            status: .rejected
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                switch result {
+                case .success:
+                    self.loadOffers()
+
+                case .failure(let error):
+                    self.showAlert(title: "Reject Failed", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+    
+    
     // MARK: Helpers
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -240,11 +261,11 @@ extension OffersForRequestViewController: UITableViewDelegate {
         let offer = offers[indexPath.row]
 
         let alert = UIAlertController(
-            title: "Accept Offer?",
+            title: "Manage Offer",
             message: """
             Technician: \(offer.technicianName)
             Price: ₺\(offer.price)
-            Estimated Time: \(offer.estimatedTime) \n If you accept the offer you can text with the technician on Smartfix to talk details.
+            Estimated Time: \(offer.estimatedTime)
             """,
             preferredStyle: .alert
         )
@@ -253,6 +274,10 @@ extension OffersForRequestViewController: UITableViewDelegate {
 
         alert.addAction(UIAlertAction(title: "Accept", style: .default) { [weak self] _ in
             self?.acceptOffer(offer)
+        })
+        
+        alert.addAction(UIAlertAction(title: "Reject", style: .destructive) { [weak self] _ in
+            self?.rejectOffer(offer)
         })
 
         present(alert, animated: true)
