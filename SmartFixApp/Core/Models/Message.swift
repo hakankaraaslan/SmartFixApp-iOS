@@ -7,8 +7,11 @@
 
 import Foundation
 
-struct Message {
+struct MessageModel: Codable, Sendable {
     let id: String
-    let text: String
+    let chatRoomId: String
+    let senderId: String
     let senderRole: UserRole
+    let text: String
+    let createdAt: TimeInterval
 }
