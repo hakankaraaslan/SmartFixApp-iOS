@@ -12,7 +12,8 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
-    // MARK: - UI Elements
+    private var selectedImage: UIImage?
+    private var selectedAddress: UserAddress?
 
     private let titleLabel: UILabel = {
         let label = UILabel()
@@ -63,14 +64,13 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
         return textView
     }()
 
-    
     private let deviceLabel: UILabel = {
         let label = UILabel()
         label.text = "Device"
         label.font = .systemFont(ofSize: 16, weight: .semibold)
         return label
     }()
-    
+
     private let deviceTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Device (e.g. Fridge)"
@@ -79,15 +79,14 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
         textField.autocorrectionType = .no
         return textField
     }()
-    
-    
+
     private let brandLabel: UILabel = {
         let label = UILabel()
         label.text = "Brand"
         label.font = .systemFont(ofSize: 16, weight: .semibold)
         return label
     }()
-    
+
     private let brandTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Brand (e.g. Samsung)"
@@ -111,6 +110,29 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
         textField.autocapitalizationType = .words
         textField.autocorrectionType = .no
         return textField
+    }()
+
+    private let addressLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Address"
+        label.font = .systemFont(ofSize: 16, weight: .semibold)
+        return label
+    }()
+
+    private let selectedAddressLabel: UILabel = {
+        let label = UILabel()
+        label.text = "No address selected"
+        label.font = .systemFont(ofSize: 15, weight: .regular)
+        label.textColor = .secondaryLabel
+        label.numberOfLines = 0
+        return label
+    }()
+
+    private let changeAddressButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Change Address", for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        return button
     }()
 
     private let selectedPhotoLabel: UILabel = {
@@ -173,6 +195,9 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
             brandTextField,
             modelLabel,
             modelTextField,
+            addressLabel,
+            selectedAddressLabel,
+            changeAddressButton,
             selectedPhotoLabel,
             selectedImageView,
             addPhotoButton,
@@ -186,19 +211,12 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
         return stack
     }()
 
-    // MARK: - Properties
-
-    private var selectedImage: UIImage?
-
-    // MARK: - Lifecycle
-
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupActions()
+        fetchInitialAddress()
     }
-
-    // MARK: - Setup
 
     private func setupUI() {
         title = "Create Request"
@@ -243,9 +261,47 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
     private func setupActions() {
         addPhotoButton.addTarget(self, action: #selector(addPhotoButtonTapped), for: .touchUpInside)
         submitButton.addTarget(self, action: #selector(submitButtonTapped), for: .touchUpInside)
+        changeAddressButton.addTarget(self, action: #selector(changeAddressTapped), for: .touchUpInside)
     }
 
-    // MARK: - Actions
+    private func fetchInitialAddress() {
+        guard let uid = AuthService.shared.currentUserId else { return }
+
+        FirestoreService.shared.fetchUserAddresses(uid: uid) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+
+                switch result {
+                case .success(let addresses):
+                    self.selectedAddress = addresses.first
+                    self.configureSelectedAddress()
+
+                case .failure(let error):
+                    print("Fetch addresses error:", error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func configureSelectedAddress() {
+        guard let address = selectedAddress else {
+            selectedAddressLabel.text = "No address selected"
+            return
+        }
+
+        selectedAddressLabel.text = "\(address.city) / \(address.state)\n\(address.neighborhood), \(address.street), bina no: \(address.buildingNumber), daire: \(address.doorNumber), kat: \(address.floor)"
+    }
+
+    @objc private func changeAddressTapped() {
+        let vc = AddressSelectionViewController(
+            selectedAddressId: selectedAddress?.id
+        ) { [weak self] selectedAddress in
+            self?.selectedAddress = selectedAddress
+            self?.configureSelectedAddress()
+        }
+
+        navigationController?.pushViewController(vc, animated: true)
+    }
 
     @objc private func addPhotoButtonTapped() {
         let picker = UIImagePickerController()
@@ -257,8 +313,6 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
     @objc private func submitButtonTapped() {
         handleSubmit()
     }
-
-    // MARK: - Form Logic
 
     private func handleSubmit() {
         let descriptionText = descriptionTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -286,21 +340,21 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
             return
         }
 
+        guard let selectedAddress = selectedAddress,
+              !selectedAddress.city.isEmpty else {
+            showAlert(title: "Address Error", message: "Please select an address.")
+            return
+        }
+
         setLoading(true)
 
         FirestoreService.shared.fetchUser(uid: uid) { [weak self] result in
             DispatchQueue.main.async {
-                guard let self else { return }
+                guard let self = self else { return }
 
                 switch result {
                 case .success(let user):
-
-                    guard let city = user.address?.city, !city.isEmpty else {
-                        self.setLoading(false)
-                        self.showAlert(title: "Address Error", message: "User city not found.")
-                        return
-                    }
-
+                    let city = selectedAddress.city
                     let category = self.selectedCategoryTitle()
                     let requestId = UUID().uuidString
                     let generatedTitle = "\(deviceText) - \(brandText)"
@@ -317,8 +371,8 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
                         model: modelText.isEmpty ? nil : modelText,
                         city: city,
                         cityKey: city.normalizedCityKey,
-                        state: user.address?.state,
-                        customerAddress: user.address,
+                        state: selectedAddress.state,
+                        customerAddress: selectedAddress,
                         status: .open,
                         acceptedOfferId: nil,
                         acceptedTechnicianId: nil,
@@ -327,7 +381,7 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
 
                     RequestService.shared.createRequest(request: request) { [weak self] createResult in
                         DispatchQueue.main.async {
-                            guard let self else { return }
+                            guard let self = self else { return }
                             self.setLoading(false)
 
                             switch createResult {
@@ -376,9 +430,11 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
 
         categorySegmentedControl.isEnabled = !isLoading
         descriptionTextView.isEditable = !isLoading
+        deviceTextField.isEnabled = !isLoading
         brandTextField.isEnabled = !isLoading
         modelTextField.isEnabled = !isLoading
         addPhotoButton.isEnabled = !isLoading
+        changeAddressButton.isEnabled = !isLoading
         submitButton.isEnabled = !isLoading
     }
 
@@ -387,8 +443,6 @@ final class CreateRequestViewController: UIViewController, UIImagePickerControll
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
-
-    // MARK: - UIImagePickerControllerDelegate
 
     func imagePickerController(_ picker: UIImagePickerController,
                                didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {

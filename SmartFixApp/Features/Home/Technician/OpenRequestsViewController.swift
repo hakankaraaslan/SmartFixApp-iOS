@@ -103,7 +103,7 @@ final class OpenRequestsViewController: UIViewController {
 
                 switch userResult {
                 case .success(let user):
-                    guard let city = user.address?.city, !city.isEmpty else {
+                    guard let city = user.addresses?.first?.city, !city.isEmpty else {
                         self.openRequests = []
                         self.tableView.reloadData()
                         self.tableView.setEmptyMessage("Technician city not found.")

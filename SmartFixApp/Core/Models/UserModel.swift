@@ -13,7 +13,7 @@ struct UserModel: Codable {
     var fullName: String
     var role: UserRole
     var isAddressCompleted: Bool
-    var address: UserAddress?
+    var addresses: [UserAddress]?
 }
 
 enum UserRole: String, Codable {

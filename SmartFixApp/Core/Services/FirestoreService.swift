@@ -38,28 +38,19 @@ final class FirestoreService {
 
             let isAddressCompleted = data["isAddressCompleted"] as? Bool ?? false
 
-            var address: UserAddress?
+            let addressesData = data["addresses"] as? [[String: Any]] ?? []
 
-            if let addressData = data["address"] as? [String: Any] {
-                address = UserAddress(
-                    city: addressData["city"] as? String ?? "",
-                    state: addressData["state"] as? String ?? "",
-                    neighborhood: addressData["neighborhood"] as? String ?? "",
-                    street: addressData["street"] as? String ?? "",
-                    buildingNumber: addressData["buildingNumber"] as? String ?? "",
-                    floor: addressData["floor"] as? String ?? "",
-                    doorNumber: addressData["doorNumber"] as? String ?? "",
-                    phoneNumber: addressData["phoneNumber"] as? String ?? ""
-                )
+            let addresses = addressesData.compactMap {
+                UserAddress.fromDictionary($0)
             }
-
+            
             let user = UserModel(
                 uid: uid,
                 email: email,
                 fullName: fullName,
                 role: role,
                 isAddressCompleted: isAddressCompleted,
-                address: address
+                addresses: addresses
             )
 
             completion(.success(user))
@@ -74,10 +65,13 @@ final class FirestoreService {
         db.collection("users")
             .document(uid)
             .updateData([
-                "address": address.toDictionary(),
+                "addresses": FieldValue.arrayUnion([
+                    address.toDictionary()
+                ]),
                 "isAddressCompleted": true,
                 "updatedAt": Timestamp(date: Date())
             ]) { error in
+
                 if let error {
                     completion(.failure(error))
                 } else {
@@ -85,6 +79,80 @@ final class FirestoreService {
                 }
             }
     }
+    
+    func fetchUserAddresses(
+        uid: String,
+        completion: @escaping (Result<[UserAddress], Error>) -> Void
+    ) {
+        db.collection("users")
+            .document(uid)
+            .getDocument { snapshot, error in
+
+                if let error {
+                    completion(.failure(error))
+                    return
+                }
+
+                guard
+                    let data = snapshot?.data(),
+                    let addressesData = data["addresses"] as? [[String: Any]]
+                else {
+                    completion(.success([]))
+                    return
+                }
+
+                let addresses = addressesData.compactMap {
+                    UserAddress.fromDictionary($0)
+                }
+
+                completion(.success(addresses))
+            }
+    }
+    
+    func deleteAddress(
+        uid: String,
+        addressId: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+
+        db.collection("users")
+            .document(uid)
+            .getDocument { [weak self] snapshot, error in
+
+                if let error {
+                    completion(.failure(error))
+                    return
+                }
+
+                guard
+                    let self,
+                    let data = snapshot?.data(),
+                    let addressData = data["addresses"] as? [[String: Any]]
+                else {
+                    completion(.failure(NSError()))
+                    return
+                }
+
+                let updatedAddresses = addressData.filter {
+                    ($0["id"] as? String) != addressId
+                }
+
+                self.db.collection("users")
+                    .document(uid)
+                    .updateData([
+                        "addresses": updatedAddresses
+                    ]) { error in
+
+                        if let error {
+                            completion(.failure(error))
+                        } else {
+                            completion(.success(()))
+                        }
+                    }
+            }
+    }
+    
+    
 }
 
 enum UserDBServiceError: Error {

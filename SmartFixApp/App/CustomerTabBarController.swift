@@ -31,8 +31,14 @@ final class CustomerTabBarController: UITabBarController {
         chatsVC.title = "Chats"
         let chatsNav = UINavigationController(rootViewController: chatsVC)
         chatsNav.tabBarItem = UITabBarItem(title: "Chats", image: UIImage(systemName: "message"), tag: 2)
+        
+        let customerProfileVC = CustomerProfileViewController()
+        customerProfileVC.title = "Profile"
+        addLogoutButton(to: customerProfileVC)
+        let customerProfileNav = UINavigationController(rootViewController: customerProfileVC)
+        customerProfileNav.tabBarItem = UITabBarItem(title: "Profile", image: UIImage(systemName: "person"), tag: 3)
 
-        viewControllers = [homeNav, myRequestsNav, chatsNav]
+        viewControllers = [homeNav, myRequestsNav, chatsNav, customerProfileNav]
         tabBar.tintColor = .systemBlue
     }
     

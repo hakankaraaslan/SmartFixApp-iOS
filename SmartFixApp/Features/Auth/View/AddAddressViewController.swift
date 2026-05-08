@@ -12,9 +12,12 @@ final class AddAddressViewController: UIViewController {
     private let uid: String
     private let userRole: UserRole
 
-    init(uid: String, userRole: UserRole) {
+    private let shouldNavigateHomeAfterSave: Bool
+
+    init(uid: String, userRole: UserRole, shouldNavigateHomeAfterSave: Bool = true) {
         self.uid = uid
         self.userRole = userRole
+        self.shouldNavigateHomeAfterSave = shouldNavigateHomeAfterSave
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -114,7 +117,9 @@ final class AddAddressViewController: UIViewController {
     private func setup() {
         title = "Add Address"
         navigationItem.largeTitleDisplayMode = .never
-        navigationItem.hidesBackButton = true
+        if shouldNavigateHomeAfterSave {
+            navigationItem.hidesBackButton = true
+        }
         view.backgroundColor = .systemBackground
     }
 
@@ -185,6 +190,7 @@ final class AddAddressViewController: UIViewController {
         }
 
         let address = UserAddress(
+            id: UUID().uuidString,
             city: city,
             state: state,
             neighborhood: neighborhood,
@@ -202,10 +208,14 @@ final class AddAddressViewController: UIViewController {
                 switch result {
                 case .success:
                     SessionManager.shared.isAddressCompleted = true
-                    let homeVC = HomeRouter.makeHome(for: self.userRole)
-                    self.view.window?.rootViewController = homeVC
-                    self.view.window?.makeKeyAndVisible()
 
+                    if self.shouldNavigateHomeAfterSave {
+                        let homeVC = HomeRouter.makeHome(for: self.userRole)
+                        self.view.window?.rootViewController = homeVC
+                        self.view.window?.makeKeyAndVisible()
+                    } else {
+                        self.navigationController?.popViewController(animated: true)
+                    }
                 case .failure(let error):
                     self.showAlert(title: "Save Failed", message: error.localizedDescription)
                 }

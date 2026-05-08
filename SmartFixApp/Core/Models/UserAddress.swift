@@ -8,6 +8,7 @@
 import Foundation
 
 struct UserAddress: Codable {
+    let id: String
     let city: String
     let state: String
     let neighborhood: String

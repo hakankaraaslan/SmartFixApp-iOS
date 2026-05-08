@@ -36,8 +36,15 @@ final class TechnicianTabBarController: UITabBarController {
         chatsVC.title = "Chats"
         let chatsNav = UINavigationController(rootViewController: chatsVC)
         chatsNav.tabBarItem = UITabBarItem(title: "Chats", image: UIImage(systemName: "message"), tag: 2)
+        
+        let technicianProfileVC = TechnicianProfileViewController()
+        technicianProfileVC.title = "Profile"
+        addLogoutButton(to: technicianProfileVC)
+        let technicianProfileNav = UINavigationController(rootViewController: technicianProfileVC)
+        technicianProfileNav.tabBarItem = UITabBarItem(title: "Profile", image: UIImage(systemName: "person"), tag: 3)
 
-        viewControllers = [homeNav, openRequestsNav, chatsNav]
+
+        viewControllers = [homeNav, openRequestsNav, chatsNav, technicianProfileNav]
         tabBar.tintColor = .systemBlue
         navigationItem.largeTitleDisplayMode = .never
     }
