@@ -142,6 +142,7 @@ final class OfferCreateViewController: UIViewController {
         setupUI()
         setupActions()
         fetchInitialData()
+        setupKeyboardDismissGesture()
     }
     
     //MARK: Setup

@@ -62,6 +62,7 @@ final class ChatDetailViewController: UIViewController {
         setupTableView()
         setupActions()
         listenMessages()
+        setupKeyboardDismissGesture()
     }
 
     // MARK: Setup

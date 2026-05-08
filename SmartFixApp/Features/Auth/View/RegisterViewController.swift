@@ -115,6 +115,7 @@ final class RegisterViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupActions()
+        setupKeyboardDismissGesture()
     }
     
     // MARK: - Setup

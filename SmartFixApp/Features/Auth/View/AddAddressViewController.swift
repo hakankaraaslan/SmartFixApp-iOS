@@ -106,6 +106,7 @@ final class AddAddressViewController: UIViewController {
         addSubviews()
         setupConstraints()
         setupActions()
+        setupKeyboardDismissGesture()
     }
 
     // MARK: - Setup

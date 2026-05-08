@@ -97,6 +97,7 @@ final class LoginViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupActions()
+        setupKeyboardDismissGesture()
     }
 
     // MARK: - Setup
