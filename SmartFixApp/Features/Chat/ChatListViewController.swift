@@ -146,7 +146,9 @@ extension ChatListViewController: UITableViewDelegate {
             requestTitle: room.requestTitle,
             currentUserRole: role
         )
+        
 
+        chatDetailVC.hidesBottomBarWhenPushed = true
         navigationController?.pushViewController(chatDetailVC, animated: true)
         tableView.deselectRow(at: indexPath, animated: true)
     }

@@ -187,6 +187,7 @@ final class OffersForRequestViewController: UIViewController {
                                     currentUserRole: .customer
                                 )
 
+                                chatVC.hidesBottomBarWhenPushed = true
                                 self.navigationController?.pushViewController(chatVC, animated: true)
 
                             case .failure(let error):

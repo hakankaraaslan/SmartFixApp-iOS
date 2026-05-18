@@ -10,7 +10,13 @@ import FirebaseFirestore
 
 final class ChatDetailViewController: UIViewController {
 
+    private enum ChatItem {
+        case date(String)
+        case message(MessageModel)
+    }
+    
     private var messages: [MessageModel] = []
+    private var chatItems: [ChatItem] = []
     private var listener: ListenerRegistration?
 
     private let chatRoomId: String
@@ -39,7 +45,8 @@ final class ChatDetailViewController: UIViewController {
         return button
     }()
 
-    // MARK: Init
+    // MARK: - Init
+
     init(chatRoomId: String, participantName: String, requestTitle: String, currentUserRole: UserRole) {
         self.chatRoomId = chatRoomId
         self.participantName = participantName
@@ -55,17 +62,18 @@ final class ChatDetailViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    
+    // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupTableView()
         setupActions()
         listenMessages()
-        setupKeyboardDismissGesture()
     }
 
-    // MARK: Setup
+    // MARK: - Setup
+
     private func setupUI() {
         title = participantName
         view.backgroundColor = .systemBackground
@@ -73,6 +81,7 @@ final class ChatDetailViewController: UIViewController {
 
         view.addSubview(tableView)
         view.addSubview(inputContainerView)
+
         inputContainerView.addSubview(messageTextField)
         inputContainerView.addSubview(sendButton)
 
@@ -84,7 +93,10 @@ final class ChatDetailViewController: UIViewController {
         NSLayoutConstraint.activate([
             inputContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             inputContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            inputContainerView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+
+            // Klavye açılınca inputContainer klavyenin üstüne çıkar
+            inputContainerView.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
+
             inputContainerView.heightAnchor.constraint(equalToConstant: 70),
 
             messageTextField.leadingAnchor.constraint(equalTo: inputContainerView.leadingAnchor, constant: 16),
@@ -108,6 +120,12 @@ final class ChatDetailViewController: UIViewController {
             MessageBubbleCell.self,
             forCellReuseIdentifier: MessageBubbleCell.identifier
         )
+
+        tableView.register(
+            ChatDateSeparatorCell.self,
+            forCellReuseIdentifier: ChatDateSeparatorCell.identifier
+        )
+        
         tableView.dataSource = self
         tableView.separatorStyle = .none
         tableView.backgroundColor = .systemBackground
@@ -117,9 +135,9 @@ final class ChatDetailViewController: UIViewController {
     private func setupActions() {
         sendButton.addTarget(self, action: #selector(sendButtonTapped), for: .touchUpInside)
     }
-    
 
-    // MARK: DATA
+    // MARK: - Data
+
     private func listenMessages() {
         listener = ChatService.shared.listenMessages(chatRoomId: chatRoomId) { [weak self] result in
             DispatchQueue.main.async {
@@ -128,9 +146,12 @@ final class ChatDetailViewController: UIViewController {
                 switch result {
                 case .success(let messages):
                     self.messages = messages
+                    self.chatItems = self.buildChatItems(from: messages)
                     self.tableView.reloadData()
-                    self.scrollToBottom()
 
+                    DispatchQueue.main.async {
+                        self.scrollToBottom()
+                    }
                 case .failure(let error):
                     print("Listen messages error:", error.localizedDescription)
                 }
@@ -140,8 +161,8 @@ final class ChatDetailViewController: UIViewController {
 
     @objc private func sendButtonTapped() {
         let text = (messageTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
 
+        guard !text.isEmpty else { return }
         guard let senderId = AuthService.shared.currentUserId else { return }
 
         let message = MessageModel(
@@ -155,43 +176,92 @@ final class ChatDetailViewController: UIViewController {
 
         messageTextField.text = nil
 
-        ChatService.shared.sendMessage(chatRoomId: chatRoomId, message: message) { result in
+        ChatService.shared.sendMessage(
+            chatRoomId: chatRoomId,
+            message: message
+        ) { result in
             if case .failure(let error) = result {
                 print("Send message error:", error.localizedDescription)
             }
         }
     }
-    
 
-    // MARK: Helpers
+    // MARK: - Helpers
     private func scrollToBottom() {
-        guard !messages.isEmpty else { return }
+        guard !chatItems.isEmpty else { return }
 
-        let indexPath = IndexPath(row: messages.count - 1, section: 0)
-        tableView.scrollToRow(at: indexPath, at: .bottom, animated: true)
+        tableView.layoutIfNeeded()
+
+        let lastSection = tableView.numberOfSections - 1
+        guard lastSection >= 0 else { return }
+
+        let lastRow = tableView.numberOfRows(inSection: lastSection) - 1
+        guard lastRow >= 0 else { return }
+
+        let indexPath = IndexPath(row: lastRow, section: lastSection)
+
+        DispatchQueue.main.async {
+            self.tableView.scrollToRow(
+                at: indexPath,
+                at: .bottom,
+                animated: true
+            )
+        }
     }
     
+    private func buildChatItems(from messages: [MessageModel]) -> [ChatItem] {
+        var items: [ChatItem] = []
+        var lastDayText: String?
+
+        for message in messages {
+            let dayText = message.createdAt.chatDayStringTR
+
+            if dayText != lastDayText {
+                items.append(.date(dayText))
+                lastDayText = dayText
+            }
+
+            items.append(.message(message))
+        }
+
+        return items
+    }
 }
 
-// MARK: Extensions - Tableview
+// MARK: - UITableViewDataSource
+
 extension ChatDetailViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         messages.count
     }
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
 
-        let message = messages[indexPath.row]
+        let item = chatItems[indexPath.row]
 
-        let cell = tableView.dequeueReusableCell(
-            withIdentifier: MessageBubbleCell.identifier,
-            for: indexPath
-        ) as! MessageBubbleCell
+        switch item {
+        case .date(let text):
+            let cell = tableView.dequeueReusableCell(
+                withIdentifier: ChatDateSeparatorCell.identifier,
+                for: indexPath
+            ) as! ChatDateSeparatorCell
 
-        let isCurrentUser = message.senderId == AuthService.shared.currentUserId
-        cell.configure(message: message, isCurrentUser: isCurrentUser)
+            cell.configure(text: text)
+            return cell
 
-        return cell
+        case .message(let message):
+            let cell = tableView.dequeueReusableCell(
+                withIdentifier: MessageBubbleCell.identifier,
+                for: indexPath
+            ) as! MessageBubbleCell
+
+            let isCurrentUser = message.senderId == AuthService.shared.currentUserId
+            cell.configure(message: message, isCurrentUser: isCurrentUser)
+            return cell
+        }
     }
 }
