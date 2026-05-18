@@ -110,6 +110,7 @@ final class AddAddressViewController: UIViewController {
         setupConstraints()
         setupActions()
         setupKeyboardDismissGesture()
+        setupKeyboardObservers(for: scrollView)
     }
 
     // MARK: - Setup

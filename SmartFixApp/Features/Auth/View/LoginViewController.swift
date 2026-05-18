@@ -10,7 +10,10 @@ import UIKit
 final class LoginViewController: UIViewController {
 
     private let authService = AuthService.shared
+    
     // MARK: - UI Elements
+    private let scrollView = UIScrollView()
+    private let contentView = UIView()
 
     private let titleLabel: UILabel = {
         let label = UILabel()
@@ -98,6 +101,7 @@ final class LoginViewController: UIViewController {
         setupUI()
         setupActions()
         setupKeyboardDismissGesture()
+        setupKeyboardObservers(for: scrollView)
     }
 
     // MARK: - Setup
@@ -105,11 +109,33 @@ final class LoginViewController: UIViewController {
         view.backgroundColor = .systemBackground
         view.addSubview(stackView)
 
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+        contentView.addSubview(stackView)
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        
         NSLayoutConstraint.activate([
-            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            // ScrollView
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
+            // ContentView
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+
+            // StackView
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 100),
+            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
+            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
+            stackView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            
             emailTextField.heightAnchor.constraint(equalToConstant: 50),
             passwordTextField.heightAnchor.constraint(equalToConstant: 50),
             loginButton.heightAnchor.constraint(equalToConstant: 50),
